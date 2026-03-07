@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Question } from '@/types';
 import { Bookmark, TrendingUp, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { SparklesIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/lib/supabase';
 import { statsService } from '@/lib/stats-service';
 import clsx from 'clsx';
@@ -88,8 +88,8 @@ export default function QuestionCard({ question, isBookmarked: initialBookmarked
               {question.question}
             </p>
             {question.source_url && (
-              <a href={question.source_url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 mt-0.5 flex-shrink-0 font-medium" title="View source" aria-label="Open source link">
-                <ExternalLink size={14} aria-hidden />
+              <a href={question.source_url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-700 transition-colors mt-0.5 flex-shrink-0 p-2 hover:bg-primary-50 rounded-xl" title="View source" aria-label="Open source link">
+                <ExternalLink size={20} aria-hidden />
               </a>
             )}
           </div>
@@ -119,21 +119,7 @@ export default function QuestionCard({ question, isBookmarked: initialBookmarked
                 (!userId) && 'opacity-50 cursor-not-allowed'
               )}
             >
-              {addedToReview ? <CheckCircleIcon className="w-5 h-5" aria-hidden /> : <SparklesIcon className="w-5 h-5" aria-hidden />}
-            </button>
-            <button
-              type="button"
-              onClick={toggleBookmark}
-              disabled={loading || !userId}
-              title={!userId ? 'Sign in to bookmark' : bookmarked ? 'Remove bookmark' : 'Bookmark'}
-              aria-label={!userId ? 'Sign in to bookmark' : bookmarked ? 'Remove bookmark' : 'Bookmark'}
-              className={clsx(
-                'min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150',
-                bookmarked ? 'bg-primary-50 text-primary-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100',
-                (!userId) && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <Bookmark size={18} className={bookmarked ? 'fill-primary-600' : ''} aria-hidden />
+              {addedToReview ? <CheckCircleIcon className="w-5 h-5" aria-hidden /> : <ClockIcon className="w-5 h-5" aria-hidden />}
             </button>
           </div>
           {question.frequency > 1 && (

@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import QuestionCard from '@/components/QuestionCard';
-import PaywallModal from '@/components/PaywallModal';
 import Link from 'next/link';
 import { Globe, MapPin, TrendingUp, BookOpen, Filter, Zap, Clock } from 'lucide-react';
 import { Question } from '@/types';
@@ -34,8 +33,7 @@ export default async function CompanyPage(props: PageProps) {
 
   if (!companyRes.data) notFound();
   const company = companyRes.data;
-  const isPro = subscriptionRes.data?.plan !== 'free' && subscriptionRes.data?.status === 'active';
-  const canAccess = company.tier === 'free' || isPro;
+  const canAccess = true;
 
   // Build question query
   let qQuery = supabase.from('questions').select('*').eq('company_id', company.id).eq('is_approved', true);
@@ -89,9 +87,6 @@ export default async function CompanyPage(props: PageProps) {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-gray-900">{company.name}</h1>
-                {company.tier === 'pro' && (
-                  <span className="badge badge-pro"><Zap size={10} aria-hidden />Pro</span>
-                )}
               </div>
               <p className="text-gray-600 mb-3">{company.description}</p>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
@@ -210,27 +205,6 @@ export default async function CompanyPage(props: PageProps) {
                   />
                 ))}
 
-                {/* Paywall */}
-                {!canAccess && lockedCount > 0 && (
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/90 to-transparent z-10 rounded-xl pointer-events-none" />
-                    <div className="card p-12 text-center border-amber-200 relative z-20">
-                      <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Zap size={26} className="text-amber-600" aria-hidden />
-                      </div>
-                      <h3 className="font-display font-bold text-xl text-gray-900 mb-2">
-                        {lockedCount} more questions locked
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-6 max-w-xs mx-auto">
-                        {company.name} is a Pro company. Upgrade to see all questions, including system design and managerial rounds.
-                      </p>
-                      <Link href="/pricing" className="btn-gold inline-flex items-center gap-2">
-                        <Zap size={15} aria-hidden />
-                        Unlock with Pro
-                      </Link>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>

@@ -21,10 +21,6 @@ export default function CompanyCard({ company }: { company: Company }) {
             <p className="text-text-muted text-xs font-mono">{company.industry}</p>
           </div>
         </div>
-        <span className={`badge flex-shrink-0 ${company.tier === 'pro' ? 'badge-pro' : 'badge-free'}`}>
-          {company.tier === 'pro' && <Zap size={9} />}
-          {company.tier === 'pro' ? 'Pro' : 'Free'}
-        </span>
       </div>
 
       {/* Description */}

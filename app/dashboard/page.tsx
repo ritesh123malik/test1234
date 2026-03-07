@@ -37,8 +37,8 @@ export default async function DashboardPage() {
 
   const QUICK_ACTIONS = [
     { href: '/companies', icon: BookOpen, label: 'Browse Companies', desc: '40+ companies', color: 'blue' },
-    { href: '/resume', icon: FileText, label: 'Score Resume', desc: 'AI analysis', color: 'gold', pro: true },
-    { href: '/roadmap', icon: Map, label: 'Build Roadmap', desc: '4-week plan', color: 'green', pro: true },
+    { href: '/resume', icon: FileText, label: 'Score Resume', desc: 'AI analysis', color: 'gold' },
+    { href: '/roadmap', icon: Map, label: 'Build Roadmap', desc: '4-week plan', color: 'green' },
     { href: '/profile#bookmarks', icon: Bookmark, label: 'My Bookmarks', desc: `${bookmarkCount} saved`, color: 'blue' },
   ];
 
@@ -57,12 +57,6 @@ export default async function DashboardPage() {
                 : `You're studying ${progress.length} ${progress.length === 1 ? 'company' : 'companies'}.`}
             </p>
           </div>
-          {!isPro && (
-            <Link href="/pricing" className="hidden md:flex btn-gold items-center gap-2 text-sm">
-              <Zap size={14} aria-hidden />
-              Upgrade to Pro
-            </Link>
-          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
@@ -91,7 +85,7 @@ export default async function DashboardPage() {
               Quick Actions
             </h2>
             <div className="flex flex-col gap-3">
-              {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color, pro }) => (
+              {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color }) => (
                 <Link key={href} href={href} className="card card-hover p-4 flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
                     ${color === 'blue' ? 'bg-primary-50' : color === 'gold' ? 'bg-amber-50' : 'bg-emerald-50'}`}>
@@ -102,7 +96,6 @@ export default async function DashboardPage() {
                     <p className="text-gray-500 text-xs">{desc}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {pro && !isPro && <span className="badge badge-pro text-xs"><Zap size={9} aria-hidden />Pro</span>}
                     <ArrowRight size={15} className="text-gray-400" aria-hidden />
                   </div>
                 </Link>
@@ -157,25 +150,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {!isPro && (
-          <div className="mt-10 card p-6 border-amber-200 bg-gradient-to-br from-amber-50/50 to-transparent flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Zap size={22} className="text-amber-600" aria-hidden />
-              </div>
-              <div>
-                <p className="font-display font-bold text-lg text-gray-900">Unlock Pro features</p>
-                <p className="text-gray-600 text-sm">
-                  Resume AI scoring, unlimited roadmaps, and pro-tier company questions.
-                </p>
-              </div>
-            </div>
-            <Link href="/pricing" className="btn-gold flex-shrink-0 flex items-center gap-2">
-              View pricing
-              <ArrowRight size={15} aria-hidden />
-            </Link>
-          </div>
-        )}
       </main>
     </div>
   );

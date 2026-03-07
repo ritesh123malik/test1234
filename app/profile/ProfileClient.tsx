@@ -50,15 +50,6 @@ export default function ProfileClient({ user, profile, subscription, bookmarks, 
           {profile?.college && <p className="text-text-secondary text-sm mt-0.5">{profile.college}</p>}
         </div>
         <div className="flex flex-col items-end gap-2">
-          <span className={clsx('badge', isPro ? 'badge-pro' : 'badge-free')}>
-            {isPro && <Zap size={10} />}
-            {isPro ? `Pro — ${subscription.plan}` : 'Free Plan'}
-          </span>
-          {!isPro && (
-            <Link href="/pricing" className="text-blue text-xs hover:underline flex items-center gap-1">
-              Upgrade <ExternalLink size={10} />
-            </Link>
-          )}
         </div>
       </div>
 
@@ -114,11 +105,6 @@ export default function ProfileClient({ user, profile, subscription, bookmarks, 
               <p className="text-text-secondary text-sm">
                 Expires: <span className="text-text-primary">{new Date(subscription.expires_at).toLocaleDateString('en-IN')}</span>
               </p>
-            )}
-            {!isPro && (
-              <Link href="/pricing" className="btn-gold w-full flex items-center justify-center gap-2 mt-4 text-sm">
-                <Zap size={14} />Upgrade to Pro
-              </Link>
             )}
           </div>
         </div>
