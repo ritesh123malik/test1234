@@ -13,7 +13,8 @@ import {
     Sparkles,
     ArrowRight,
     Terminal,
-    Layers
+    Layers,
+    AlertCircle
 } from 'lucide-react';
 import { Header as Navbar } from '@/components/layout/Header';
 import UpgradeModal from '@/components/ui/UpgradeModal';

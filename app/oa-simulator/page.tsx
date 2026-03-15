@@ -16,7 +16,7 @@ import {
     Rocket,
     Shield
 } from 'lucide-react';
-import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 export default function OALobby() {
     const router = useRouter();

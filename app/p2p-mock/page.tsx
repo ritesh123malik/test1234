@@ -14,7 +14,8 @@ import {
     Filter,
     Search,
     Brain,
-    Headset
+    Headset,
+    ArrowRight
 } from 'lucide-react';
 import { Header as Navbar } from '@/components/layout/Header';
 import { toast } from 'sonner';

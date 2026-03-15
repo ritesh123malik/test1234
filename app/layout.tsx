@@ -4,6 +4,7 @@ import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Layout } from '@/components/layout/Layout';
 import AIFloatingButton from '@/components/ai/AIFloatingButton';
+import { Toaster } from 'sonner';
 
 const syne = Syne({
   subsets: ['latin'],
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </Layout>
         <AIFloatingButton />
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

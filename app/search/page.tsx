@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -17,7 +17,7 @@ import {
     Loader2
 } from 'lucide-react';
 
-export default function SearchPage() {
+function SearchContent() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
 
@@ -164,5 +164,18 @@ export default function SearchPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[var(--bg-base)] flex flex-col items-center justify-center gap-6">
+                <Loader2 className="animate-spin text-[var(--brand-primary)]" size={48} />
+                <p className="text-[var(--text-muted)] font-black uppercase tracking-widest text-sm animate-pulse">Initializing Search Sector...</p>
+            </div>
+        }>
+            <SearchContent />
+        </Suspense>
     );
 }
