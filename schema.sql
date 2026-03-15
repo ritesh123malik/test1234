@@ -1,5 +1,5 @@
 -- ============================================================
--- PLACEMENT INTEL — Complete Supabase Schema
+-- PLACEMENT INTEL — Complete Supabase Schema (Idempotent)
 -- Run this entire file in Supabase SQL Editor
 -- ============================================================
 
@@ -7,10 +7,11 @@
 create extension if not exists "uuid-ossp";
 
 -- ─── PROFILES (extends Supabase auth.users) ─────────────────
-create table profiles (
+create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   full_name text,
+  username text unique,
   avatar_url text,
   college text,
   graduation_year int,
@@ -19,8 +20,16 @@ create table profiles (
   updated_at timestamptz default now()
 );
 
+-- Ensure newest columns exist if table was already there
+alter table profiles add column if not exists username text unique;
+alter table profiles add column if not exists xp int default 0;
+alter table profiles add column if not exists streak int default 0;
+alter table profiles add column if not exists cgpa numeric(3,2) default 0.0;
+alter table profiles add column if not exists city text;
+alter table profiles add column if not exists level int default 1;
+
 -- ─── SUBSCRIPTIONS ──────────────────────────────────────────
-create table subscriptions (
+create table if not exists subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
   plan text not null default 'free',          -- 'free' | 'pro' | 'annual'
@@ -33,7 +42,7 @@ create table subscriptions (
 );
 
 -- ─── COMPANIES ──────────────────────────────────────────────
-create table companies (
+create table if not exists companies (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text unique not null,
@@ -50,7 +59,7 @@ create table companies (
 );
 
 -- ─── QUESTIONS ──────────────────────────────────────────────
-create table questions (
+create table if not exists questions (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references companies(id) on delete cascade not null,
   round text not null,                        -- 'Online Test' | 'Technical 1' | 'Technical 2' | 'Managerial' | 'HR'
@@ -65,7 +74,7 @@ create table questions (
 );
 
 -- ─── BOOKMARKS ──────────────────────────────────────────────
-create table bookmarks (
+create table if not exists bookmarks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
   question_id uuid references questions(id) on delete cascade not null,
@@ -74,7 +83,7 @@ create table bookmarks (
 );
 
 -- ─── USER PROGRESS ──────────────────────────────────────────
-create table user_progress (
+create table if not exists user_progress (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
   company_id uuid references companies(id) on delete cascade not null,
@@ -88,7 +97,7 @@ create table user_progress (
 );
 
 -- ─── RESUMES ────────────────────────────────────────────────
-create table resumes (
+create table if not exists resumes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
   file_name text,
@@ -101,7 +110,7 @@ create table resumes (
 );
 
 -- ─── ROADMAPS ───────────────────────────────────────────────
-create table roadmaps (
+create table if not exists roadmaps (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
   company text not null,
@@ -112,7 +121,7 @@ create table roadmaps (
 );
 
 -- ─── QUESTION SUBMISSIONS (crowdsourced) ────────────────────
-create table question_submissions (
+create table if not exists question_submissions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
   company_name text not null,
@@ -123,6 +132,15 @@ create table question_submissions (
   year_appeared int,
   status text default 'pending',              -- 'pending' | 'approved' | 'rejected'
   created_at timestamptz default now()
+);
+
+-- ─── PER-USER QUESTION STATUS (Fixes DSA-02) ────────────────
+create table if not exists user_question_status (
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  question_id  uuid not null, -- this should reference your question table ID
+  status       text default 'solved' check (status in ('unsolved','in_progress','solved','revisit')),
+  updated_at   timestamptz default now(),
+  primary key (user_id, question_id)
 );
 
 -- ============================================================
@@ -136,48 +154,56 @@ alter table user_progress enable row level security;
 alter table resumes enable row level security;
 alter table roadmaps enable row level security;
 alter table question_submissions enable row level security;
-
--- Companies and questions are public read
+alter table user_question_status enable row level security;
 alter table companies enable row level security;
 alter table questions enable row level security;
 
--- Profiles: users can read/update their own
-create policy "profiles_own" on profiles
-  for all using (auth.uid() = id);
+-- Policies (Drop and Recreate for idempotency)
+do $$ 
+begin
+    -- Profiles
+    drop policy if exists "profiles_own" on profiles;
+    create policy "profiles_own" on profiles for all using (auth.uid() = id);
 
--- Subscriptions: users can read their own
-create policy "subscriptions_own_read" on subscriptions
-  for select using (auth.uid() = user_id);
+    -- Subscriptions
+    drop policy if exists "subscriptions_own_read" on subscriptions;
+    create policy "subscriptions_own_read" on subscriptions for select using (auth.uid() = user_id);
 
--- Companies: everyone can read active companies
-create policy "companies_public_read" on companies
-  for select using (is_active = true);
+    -- Companies
+    drop policy if exists "companies_public_read" on companies;
+    create policy "companies_public_read" on companies for select using (is_active = true);
 
--- Questions: everyone can read approved questions
-create policy "questions_public_read" on questions
-  for select using (is_approved = true);
+    -- Questions
+    drop policy if exists "questions_public_read" on questions;
+    create policy "questions_public_read" on questions for select using (is_approved = true);
 
--- Bookmarks: users manage their own
-create policy "bookmarks_own" on bookmarks
-  for all using (auth.uid() = user_id);
+    -- Bookmarks
+    drop policy if exists "bookmarks_own" on bookmarks;
+    create policy "bookmarks_own" on bookmarks for all using (auth.uid() = user_id);
 
--- Progress: users manage their own
-create policy "progress_own" on user_progress
-  for all using (auth.uid() = user_id);
+    -- Progress
+    drop policy if exists "progress_own" on user_progress;
+    create policy "progress_own" on user_progress for all using (auth.uid() = user_id);
 
--- Resumes: users manage their own
-create policy "resumes_own" on resumes
-  for all using (auth.uid() = user_id);
+    -- Resumes
+    drop policy if exists "resumes_own" on resumes;
+    create policy "resumes_own" on resumes for all using (auth.uid() = user_id);
 
--- Roadmaps: users manage their own
-create policy "roadmaps_own" on roadmaps
-  for all using (auth.uid() = user_id);
+    -- Roadmaps
+    drop policy if exists "roadmaps_own" on roadmaps;
+    create policy "roadmaps_own" on roadmaps for all using (auth.uid() = user_id);
 
--- Submissions: users can insert and read their own
-create policy "submissions_insert" on question_submissions
-  for insert with check (auth.uid() = user_id);
-create policy "submissions_own_read" on question_submissions
-  for select using (auth.uid() = user_id);
+    -- Submissions
+    drop policy if exists "submissions_insert" on question_submissions;
+    create policy "submissions_insert" on question_submissions for insert with check (auth.uid() = user_id);
+    
+    drop policy if exists "submissions_own_read" on question_submissions;
+    create policy "submissions_own_read" on question_submissions for select using (auth.uid() = user_id);
+
+    -- User Question Status
+    drop policy if exists "status_own" on user_question_status;
+    create policy "status_own" on user_question_status for all using (auth.uid() = user_id);
+end $$;
 
 -- ============================================================
 -- FUNCTIONS & TRIGGERS
@@ -187,22 +213,37 @@ create policy "submissions_own_read" on question_submissions
 create or replace function handle_new_user()
 returns trigger as $$
 begin
-  insert into profiles (id, email, full_name, avatar_url)
+  insert into public.profiles (id, email, full_name, username, avatar_url)
   values (
     new.id,
     new.email,
     new.raw_user_meta_data->>'full_name',
+    coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
     new.raw_user_meta_data->>'avatar_url'
-  );
-  insert into subscriptions (user_id, plan, status)
-  values (new.id, 'free', 'active');
+  )
+  on conflict (id) do nothing;
+  
+  insert into public.subscriptions (user_id, plan, status)
+  values (new.id, 'free', 'active')
+  on conflict do nothing;
+  
   return new;
 end;
 $$ language plpgsql security definer;
 
+-- Trigger creation (Drop first to avoid duplication)
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- Atomic XP Increment
+create or replace function increment_xp(p_user_id uuid, p_amount int)
+returns void as $$
+begin
+  update public.profiles set xp = xp + p_amount where id = p_user_id;
+end;
+$$ language plpgsql security definer;
 
 -- Update updated_at timestamp
 create or replace function update_updated_at()
@@ -213,13 +254,17 @@ begin
 end;
 $$ language plpgsql;
 
+-- Triggers for updated_at
+drop trigger if exists profiles_updated_at on profiles;
 create trigger profiles_updated_at before update on profiles
   for each row execute function update_updated_at();
+
+drop trigger if exists progress_updated_at on user_progress;
 create trigger progress_updated_at before update on user_progress
   for each row execute function update_updated_at();
 
 -- ============================================================
--- SEED DATA — Sample companies and questions
+-- SEED DATA (Safe Inserts)
 -- ============================================================
 
 insert into companies (name, slug, description, hq, industry, package_lpa_min, package_lpa_max, tier) values
@@ -232,26 +277,35 @@ insert into companies (name, slug, description, hq, industry, package_lpa_min, p
 ('Razorpay', 'razorpay', 'India''s leading payment gateway and fintech.', 'Bengaluru, India', 'Fintech', 25, 55, 'free'),
 ('Meesho', 'meesho', 'Social commerce platform for small businesses.', 'Bengaluru, India', 'E-commerce', 20, 50, 'free'),
 ('Atlassian', 'atlassian', 'Collaboration tools for software teams.', 'Sydney, Australia', 'SaaS', 35, 80, 'pro'),
-('Adobe', 'adobe', 'Creative software and digital document solutions.', 'San Jose, CA', 'Technology', 30, 75, 'pro');
+('Adobe', 'adobe', 'Creative software and digital document solutions.', 'San Jose, CA', 'Technology', 30, 75, 'pro')
+on conflict (slug) do update set
+  description = excluded.description,
+  hq = excluded.hq,
+  industry = excluded.industry;
 
--- Get company IDs for questions (use subqueries)
-insert into questions (company_id, round, question, topic, difficulty, frequency, year_reported, is_approved)
-select id, 'Online Test', 'Find the longest substring without repeating characters.', 'Sliding Window', 'Medium', 847, 2024, true from companies where slug = 'google'
-union all
-select id, 'Technical 1', 'Design a URL shortener like bit.ly. What data model would you use?', 'System Design', 'Hard', 612, 2024, true from companies where slug = 'google'
-union all
-select id, 'Technical 1', 'Given a binary tree, find the maximum path sum.', 'Trees', 'Hard', 534, 2023, true from companies where slug = 'google'
-union all
-select id, 'Technical 2', 'Implement LRU Cache with O(1) get and put operations.', 'Data Structures', 'Medium', 923, 2024, true from companies where slug = 'amazon'
-union all
-select id, 'Technical 1', 'Find the kth largest element in an unsorted array.', 'Arrays', 'Medium', 789, 2024, true from companies where slug = 'amazon'
-union all
-select id, 'Technical 2', 'Design Amazon''s recommendation engine. Focus on scalability.', 'System Design', 'Hard', 445, 2023, true from companies where slug = 'amazon'
-union all
-select id, 'Online Test', 'Two Sum — find indices of two numbers that add to target.', 'Arrays', 'Easy', 1200, 2024, true from companies where slug = 'microsoft'
-union all
-select id, 'Technical 1', 'Design a file system with create, delete, read, write.', 'System Design', 'Hard', 567, 2024, true from companies where slug = 'microsoft'
-union all
-select id, 'Technical 1', 'Merge K sorted linked lists.', 'Linked Lists', 'Hard', 678, 2023, true from companies where slug = 'flipkart'
-union all
-select id, 'Online Test', 'Given a string, find all permutations.', 'Recursion', 'Medium', 345, 2024, true from companies where slug = 'razorpay';
+
+-- ─── INTERVIEW EXPERIENCES ──────────────────────────────────
+create table if not exists interview_experiences (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  company_id uuid references companies(id) on delete cascade not null,
+  title text not null,
+  content text not null,
+  role text default 'SDE',
+  difficulty text check (difficulty in ('Easy', 'Medium', 'Hard')),
+  is_premium boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table interview_experiences enable row level security;
+
+do $$ 
+begin
+    if not exists (select 1 from pg_policies where policyname = 'experiences_public_read') then
+        create policy "experiences_public_read" on interview_experiences for select using (true);
+    end if;
+    if not exists (select 1 from pg_policies where policyname = 'experiences_own_all') then
+        create policy "experiences_own_all" on interview_experiences for all using (auth.uid() = user_id);
+    end if;
+end $$;

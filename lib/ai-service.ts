@@ -1,9 +1,15 @@
 import Groq from 'groq-sdk';
 
-// Initialize Groq client
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY || ''
-});
+// Lazy initialization of Groq client
+let groqInstance: Groq | null = null;
+function getGroqClient() {
+    if (!groqInstance) {
+        groqInstance = new Groq({
+            apiKey: process.env.GROQ_API_KEY || '',
+        });
+    }
+    return groqInstance;
+}
 
 // Current Groq models as of 2026
 const MODELS = {
@@ -35,7 +41,7 @@ export async function generateWithGroq(
     try {
         console.log(`Using Groq model: ${model}`);
 
-        const completion = await groq.chat.completions.create({
+        const completion = await getGroqClient().chat.completions.create({
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }

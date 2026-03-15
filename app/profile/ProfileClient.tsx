@@ -15,13 +15,14 @@ export default function ProfileClient({ user, profile, subscription, bookmarks, 
   const [saving, setSaving] = useState(false);
   const [college, setCollege] = useState(profile?.college || '');
   const [name, setName] = useState(profile?.full_name || '');
+  const [cgpa, setCgpa] = useState(profile?.cgpa || '');
   const [saved, setSaved] = useState(false);
 
   const isPro = subscription?.plan !== 'free' && subscription?.status === 'active';
 
   async function saveProfile() {
     setSaving(true);
-    await supabase.from('profiles').update({ full_name: name, college }).eq('id', user.id);
+    await supabase.from('profiles').update({ full_name: name, college, cgpa: parseFloat(cgpa) || null }).eq('id', user.id);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -252,6 +253,11 @@ export default function ProfileClient({ user, profile, subscription, bookmarks, 
               <label className="section-label block mb-1.5">College / University</label>
               <input type="text" value={college} onChange={e => setCollege(e.target.value)}
                 placeholder="IIT Bombay, NIT Surathkal..." className="input" />
+            </div>
+            <div>
+              <label className="section-label block mb-1.5">CGPA</label>
+              <input type="number" step="0.01" value={cgpa} onChange={e => setCgpa(e.target.value)}
+                placeholder="0.00 - 10.00" className="input" />
             </div>
             <div>
               <label className="section-label block mb-1.5">Email (cannot change)</label>

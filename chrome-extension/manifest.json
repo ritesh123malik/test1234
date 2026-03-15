@@ -1,0 +1,36 @@
+{
+    "manifest_version": 3,
+    "name": "placement-intel Workspace Connector",
+    "version": "1.0.0",
+    "description": "Save LeetCode & GFG questions to your placement-intel sheets",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://leetcode.com/*",
+        "https://www.geeksforgeeks.org/*",
+        "https://*.supabase.co/*",
+        "http://localhost:3000/*"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://leetcode.com/problems/*",
+                "https://www.geeksforgeeks.org/problems/*",
+                "https://www.geeksforgeeks.org/batch/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    }
+}

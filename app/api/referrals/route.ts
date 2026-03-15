@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { generateReferralCode } from '@/services/referral-service';
+
+export async function GET(req: NextRequest) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('referral_code, referral_count')
+        .eq('id', user.id)
+        .single();
+
+    return NextResponse.json(profile);
+}
+
+export async function POST(req: NextRequest) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    try {
+        const code = await generateReferralCode(user.id);
+        return NextResponse.json({ referral_code: code });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}

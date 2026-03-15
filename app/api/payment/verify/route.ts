@@ -1,7 +1,7 @@
 // app/api/payment/verify/route.ts
 
 import crypto from 'crypto';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   try {

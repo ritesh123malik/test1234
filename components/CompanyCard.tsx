@@ -16,9 +16,9 @@ export default function CompanyCard({ company }: { company: Company }) {
                          font-display font-bold text-sm text-text-secondary group-hover:border-blue/30 transition-colors">
             {initials}
           </div>
-          <div>
-            <h3 className="font-display font-bold text-base leading-tight">{company.name}</h3>
-            <p className="text-text-muted text-xs font-mono">{company.industry}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display font-bold text-base leading-tight truncate">{company.name}</h3>
+            <p className="text-text-muted text-xs font-mono truncate">{company.industry}</p>
           </div>
         </div>
       </div>

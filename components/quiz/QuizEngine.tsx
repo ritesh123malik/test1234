@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
 interface QuizQuestion {
     id: string;
@@ -151,27 +151,27 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
         const percentage = Math.round((score / questions.length) * 100);
 
         return (
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center text-black">
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircleIcon className="w-12 h-12 text-green-600" />
+            <div className="glass-card rounded-3xl p-10 text-center border border-[var(--border-subtle)] shadow-2xl">
+                <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+                    <CheckCircleIcon className="w-12 h-12 text-emerald-500" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2">Quiz Complete! 🎉</h2>
-                <p className="text-5xl font-bold text-indigo-600 mb-4">{percentage}%</p>
-                <p className="text-gray-600 mb-6">
+                <h2 className="text-3xl font-display font-bold mb-2 text-[var(--text-primary)]">Quiz Complete! 🎉</h2>
+                <p className="text-6xl font-display font-bold text-[var(--brand-primary)] mb-6">{percentage}%</p>
+                <p className="text-[var(--text-secondary)] mb-8 font-medium">
                     You scored {score} out of {questions.length}
                 </p>
 
                 <div className="max-w-md mx-auto">
-                    <div className="bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+                    <div className="bg-[var(--bg-base)] rounded-full h-4 mb-4 overflow-hidden border border-[var(--border-subtle)]">
                         <div
-                            className="bg-indigo-600 h-4 rounded-full transition-all duration-500"
+                            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] h-4 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(79,70,229,0.5)]"
                             style={{ width: `${percentage}%` }}
                         />
                     </div>
-                    <p className="text-sm text-gray-500">
-                        {percentage >= 80 ? 'Excellent! You\'re well prepared!' :
-                            percentage >= 60 ? 'Good job! Keep practicing!' :
-                                'Keep practicing! You\'ll get better!'}
+                    <p className="text-sm text-[var(--text-muted)] font-medium">
+                        {percentage >= 80 ? 'Elite performance! You\'re ready for the big leagues.' :
+                            percentage >= 60 ? 'Strong foundation. Keep sharpening your edge.' :
+                                'Room for growth. Every attempt is a step forward!'}
                     </p>
                 </div>
             </div>
@@ -180,9 +180,9 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
 
     if (questions.length === 0) {
         return (
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center text-black">
-                <h2 className="text-3xl font-bold mb-2 opacity-50">No Questions Found</h2>
-                <p>Could not locate any questions for this category.</p>
+            <div className="glass-card rounded-3xl p-12 text-center border border-[var(--border-subtle)]">
+                <h2 className="text-2xl font-display font-bold mb-4 text-[var(--text-primary)] opacity-50">No Data Found</h2>
+                <p className="text-[var(--text-secondary)]">Could not locate any challenges for this segment.</p>
             </div>
         )
     }
@@ -191,66 +191,104 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
     const progress = ((currentIndex + 1) / questions.length) * 100;
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl p-6 text-black">
+        <div className="glass-card rounded-3xl p-8 border border-[var(--border-subtle)] shadow-2xl relative overflow-hidden">
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-primary)]/5 blur-[120px] pointer-events-none" />
+
             {/* Progress Bar */}
-            <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Question {currentIndex + 1} of {questions.length}</span>
-                    <span>{Math.round(progress)}% Complete</span>
+            <div className="mb-10 relative z-10">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
+                    <span className="flex items-center gap-2">
+                        <span className="text-[var(--brand-primary)]">Challenge</span> {currentIndex + 1} of {questions.length}
+                    </span>
+                    <span>{Math.round(progress)}% Progress</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-[var(--bg-base)] rounded-full h-2.5 border border-[var(--border-subtle)]/50">
                     <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] h-2.5 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(79,70,229,0.3)]"
                         style={{ width: `${progress}%` }}
                     />
                 </div>
             </div>
 
-            {/* Timer */}
-            <div className="flex items-center justify-end mb-4">
-                <ClockIcon className="w-5 h-5 text-gray-400 mr-2" />
-                <span className={`font-mono text-xl ${timeLeft[currentIndex] < 10 ? 'text-red-600' : 'text-gray-700'
-                    }`}>
-                    {Math.floor(timeLeft[currentIndex] / 60)}:{(timeLeft[currentIndex] % 60).toString().padStart(2, '0')}
-                </span>
+            {/* Timer & Meta */}
+            <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="px-3 py-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-full text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tighter">
+                    {currentQuestion.subject} • {currentQuestion.difficulty}
+                </div>
+                <div className="flex items-center gap-3 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl">
+                    <ClockIcon className="w-5 h-5 text-[var(--brand-primary)]" />
+                    <span className={`font-mono text-xl font-bold ${timeLeft[currentIndex] < 10 ? 'text-red-500 animate-pulse' : 'text-[var(--text-primary)]'}`}>
+                        {Math.floor(timeLeft[currentIndex] / 60)}:{(timeLeft[currentIndex] % 60).toString().padStart(2, '0')}
+                    </span>
+                </div>
             </div>
 
             {/* Question */}
-            <h3 className="text-xl font-bold mb-6">{currentQuestion.question}</h3>
-
-            {/* Options */}
-            <div className="space-y-3 mb-6">
-                {currentQuestion.options.map((option, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => handleAnswer(idx)}
-                        className={`w-full p-4 text-left rounded-lg border-2 transition ${selectedAnswers[currentIndex] === idx
-                                ? idx === currentQuestion.correct_option
-                                    ? 'border-green-500 bg-green-50'
-                                    : 'border-red-500 bg-red-50'
-                                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-                            }`}
-                        disabled={selectedAnswers[currentIndex] !== -1}
-                    >
-                        <span className="font-medium">{String.fromCharCode(65 + idx)}.</span> {option}
-                    </button>
-                ))}
+            <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-ping" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-primary)]">Decryption_In_Progress</span>
+                </div>
+                <h3 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-[1.1] mb-10 drop-shadow-2xl">
+                    {currentQuestion.question}
+                </h3>
             </div>
 
-            {/* Explanation (shown after answering) */}
-            {selectedAnswers[currentIndex] !== -1 && !showExplanation && (
-                <button
-                    onClick={() => setShowExplanation(true)}
-                    className="w-full mb-4 text-indigo-600 hover:text-indigo-800 text-sm"
-                >
-                    Show Explanation
-                </button>
-            )}
+            {/* Options */}
+            <div className="space-y-4 mb-8 relative z-10">
+                {currentQuestion.options.map((option, idx) => {
+                    const isSelected = selectedAnswers[currentIndex] === idx;
+                    const isCorrect = idx === currentQuestion.correct_option;
+                    const showsResult = selectedAnswers[currentIndex] !== -1;
 
-            {showExplanation && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Explanation:</h4>
-                    <p className="text-sm text-blue-700">{currentQuestion.explanation}</p>
+                    let optionStyles = 'border-[var(--border-subtle)] bg-[var(--bg-card)]/50 hover:border-[var(--brand-primary)] hover:bg-[var(--bg-card)]';
+                    if (isSelected) {
+                        optionStyles = isCorrect
+                            ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                            : 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)]';
+                    } else if (showsResult && isCorrect) {
+                        optionStyles = 'border-emerald-500/50 bg-emerald-500/5';
+                    }
+
+                    return (
+                        <button
+                            key={idx}
+                            onClick={() => handleAnswer(idx)}
+                            className={`w-full p-5 text-left rounded-2xl border-2 transition-all duration-300 group ${optionStyles}`}
+                            disabled={selectedAnswers[currentIndex] !== -1}
+                        >
+                            <div className="flex items-center gap-4">
+                                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${isSelected ? 'bg-white/20 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]'
+                                    }`}>
+                                    {String.fromCharCode(65 + idx)}
+                                </span>
+                                <span className={`font-medium text-lg ${isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                                    {option}
+                                </span>
+                                {isSelected && (
+                                    <div className="ml-auto">
+                                        {isCorrect ? <CheckCircleIcon className="w-6 h-6 text-emerald-500" /> : <XCircleIcon className="w-6 h-6 text-red-500" />}
+                                    </div>
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Explanation */}
+            {selectedAnswers[currentIndex] !== -1 && (
+                <div className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500 relative z-10">
+                    <div className="p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+                        <div className="flex items-center gap-2 mb-3">
+                            <DocumentTextIcon className="w-5 h-5 text-indigo-400" />
+                            <h4 className="font-bold text-indigo-300 text-sm uppercase tracking-widest">Logic Insight</h4>
+                        </div>
+                        <p className="text-[var(--text-secondary)] leading-relaxed italic text-sm">
+                            {currentQuestion.explanation}
+                        </p>
+                    </div>
                 </div>
             )}
 
@@ -258,9 +296,9 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
             <button
                 onClick={handleNext}
                 disabled={selectedAnswers[currentIndex] === -1}
-                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-16 bg-[var(--brand-primary)] hover:bg-[var(--brand-secondary)] text-white rounded-2xl font-bold transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(79,70,229,0.3)] relative z-10"
             >
-                {currentIndex === questions.length - 1 ? 'Complete Quiz' : 'Next Question'}
+                {currentIndex === questions.length - 1 ? 'Finalize Performance' : 'Advance Challenge'}
             </button>
         </div>
     );

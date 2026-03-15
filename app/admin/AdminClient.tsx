@@ -7,7 +7,7 @@ import { Building2, MessageSquare, Users, CreditCard, CheckCircle, XCircle, Plus
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 
-type Tab = 'overview' | 'companies' | 'questions' | 'users' | 'payments' | 'submissions';
+type Tab = 'overview' | 'companies' | 'questions' | 'users' | 'payments' | 'submissions' | 'history';
 
 export default function AdminClient({ companies, questions, users, subscriptions, pendingSubmissions }: any) {
   const [tab, setTab] = useState<Tab>('overview');
@@ -70,7 +70,12 @@ export default function AdminClient({ companies, questions, users, subscriptions
     setQSaving(false);
   }
 
+  // Feedback state for submissions
+  const [submissionFeedback, setSubmissionFeedback] = useState<{ [key: string]: string }>({});
+
   async function approveSubmission(id: string, data: any) {
+    const feedback = submissionFeedback[id] || '';
+
     // Find or create company
     let companyId = companies.find((c: any) => c.name.toLowerCase() === data.company_name.toLowerCase())?.id;
     if (!companyId) {
@@ -89,13 +94,20 @@ export default function AdminClient({ companies, questions, users, subscriptions
         year_reported: data.year_appeared, is_approved: true,
       });
     }
-    await supabase.from('question_submissions').update({ status: 'approved' }).eq('id', id);
+    await supabase.from('question_submissions').update({
+      status: 'approved',
+      feedback: feedback
+    }).eq('id', id);
     alert('Approved and added!');
   }
 
   async function rejectSubmission(id: string) {
-    await supabase.from('question_submissions').update({ status: 'rejected' }).eq('id', id);
-    alert('Rejected');
+    const feedback = submissionFeedback[id] || '';
+    await supabase.from('question_submissions').update({
+      status: 'rejected',
+      feedback: feedback
+    }).eq('id', id);
+    alert('Rejected with feedback');
   }
 
   const TABS = [
@@ -105,6 +117,7 @@ export default function AdminClient({ companies, questions, users, subscriptions
     { id: 'users', label: `Users (${users.length})` },
     { id: 'payments', label: `Pro Users (${subscriptions.length})` },
     { id: 'submissions', label: `Submissions (${pendingSubmissions.length})` },
+    { id: 'history', label: 'History' },
   ];
 
   const totalRevenue = subscriptions.reduce((acc: number, s: any) =>
@@ -359,15 +372,15 @@ export default function AdminClient({ companies, questions, users, subscriptions
       {/* Submissions */}
       {tab === 'submissions' && (
         <div>
-          <h2 className="font-display font-bold text-lg mb-5">Pending Submissions ({pendingSubmissions.length})</h2>
-          {pendingSubmissions.length === 0 ? (
+          <h2 className="font-display font-bold text-lg mb-5">Pending Submissions ({pendingSubmissions.filter((s: any) => s.status === 'pending').length})</h2>
+          {pendingSubmissions.filter((s: any) => s.status === 'pending').length === 0 ? (
             <div className="card p-10 text-center">
               <CheckCircle size={32} className="text-text-muted mx-auto mb-3" />
               <p className="text-text-secondary">No pending submissions. All caught up!</p>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {pendingSubmissions.map((s: any) => (
+              {pendingSubmissions.filter((s: any) => s.status === 'pending').map((s: any) => (
                 <div key={s.id} className="card p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="font-mono text-blue text-sm">{s.company_name}</span>
@@ -377,6 +390,18 @@ export default function AdminClient({ companies, questions, users, subscriptions
                     </span>
                   </div>
                   <p className="text-sm text-text-secondary mb-4">{s.question}</p>
+
+                  {/* Feedback Input */}
+                  <div className="mb-4">
+                    <label className="section-label block mb-1.5 opacity-60">Admin Feedback (Optional)</label>
+                    <textarea
+                      value={submissionFeedback[s.id] || ''}
+                      onChange={e => setSubmissionFeedback({ ...submissionFeedback, [s.id]: e.target.value })}
+                      placeholder="e.g. Please provide more context on the round constraints."
+                      className="input text-xs h-16 resize-none"
+                    />
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <button onClick={() => approveSubmission(s.id, s)}
                       className="flex items-center gap-1.5 bg-green-dim text-green border border-green/20 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green/20 transition-colors">
@@ -391,6 +416,43 @@ export default function AdminClient({ companies, questions, users, subscriptions
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* History */}
+      {tab === 'history' && (
+        <div className="space-y-4">
+          <h2 className="font-display font-bold text-lg mb-5">Decision History</h2>
+          <div className="card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-surface border-b border-border">
+                <tr>
+                  {['Date', 'Company', 'Question', 'Status', 'Feedback'].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-text-muted font-mono text-xs uppercase tracking-widest">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pendingSubmissions.filter((s: any) => s.status !== 'pending').map((s: any, i: number) => (
+                  <tr key={s.id} className={clsx('border-b border-border', i % 2 === 0 ? '' : 'bg-surface/50')}>
+                    <td className="px-5 py-3 text-text-muted text-xs font-mono whitespace-nowrap">
+                      {new Date(s.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 font-medium">{s.company_name}</td>
+                    <td className="px-5 py-3 max-w-xs truncate">{s.question}</td>
+                    <td className="px-5 py-3">
+                      <span className={`badge ${s.status === 'approved' ? 'bg-green-dim text-green' : 'bg-red-dim text-red'}`}>
+                        {s.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-text-secondary italic text-xs max-w-xs truncate">
+                      {s.feedback || '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </main>

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { checkPremiumGate, incrementUsage } from '@/lib/premium-gate';
 import {
     getAIResponse,
     explainProblem,
@@ -8,30 +10,50 @@ import {
 } from '@/lib/ai-service';
 
 export async function POST(req: NextRequest) {
-    try {
-        const { action, problem, difficulty, code, language } = await req.json();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-        // Get user ID from session (you have this from your auth setup)
-        const userId = req.headers.get('x-user-id') || 'anonymous';
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const body = await req.json();
+        const { action, problem, difficulty, code, language, systemPrompt: bodySystemPrompt } = body;
+
+        // 1. Check Premium Gate (Selective)
+        if (action !== 'chat') {
+            const { allowed, reason, upgrade } = await checkPremiumGate(user.id, 'ai_interviews');
+            if (!allowed) {
+                return NextResponse.json({ error: reason, upgrade: !!upgrade }, { status: 403 });
+            }
+        }
 
         let result = '';
 
         switch (action) {
             case 'explain':
-                result = await explainProblem(problem, difficulty || 'Medium');  // Changed here
+                result = await explainProblem(problem, difficulty || 'Medium');
                 break;
             case 'approach':
-                result = await generateSolutionApproach(problem, userId);
+                result = await generateSolutionApproach(problem, user.id);
                 break;
             case 'hint':
-                result = await getHint(problem, userId);
+                result = await getHint(problem, user.id);
                 break;
             case 'debug':
-                result = await debugCode(code, language || 'javascript', userId);
+                result = await debugCode(code, language || 'javascript', user.id);
+                break;
+            case 'chat':
+                result = await getAIResponse(problem, user.id, bodySystemPrompt);
                 break;
             default:
-                result = await getAIResponse(problem, userId, "You're a LeetCode expert.");
+                result = await getAIResponse(problem, user.id, "You're a LeetCode expert.");
         }
+
+
+        // 2. Increment usage
+        await incrementUsage(user.id, 'ai_interviews');
 
         return NextResponse.json({ success: true, result });
 

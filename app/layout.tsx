@@ -2,8 +2,7 @@
 import type { Metadata } from 'next';
 import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { Layout } from '@/components/layout/Layout';
 import AIFloatingButton from '@/components/ai/AIFloatingButton';
 
 const syne = Syne({
@@ -40,19 +39,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased min-h-screen flex flex-col bg-bg text-text-primary`}>
-        <a href="#main-content" className="skip-link">
-          Skip to content
-        </a>
-        <div className="relative flex flex-col min-h-screen">
-          <Navbar />
-          <main id="main-content" className="flex-grow">
-            {children}
-          </main>
-          <AIFloatingButton />
-          <Footer />
-        </div>
+    <html lang="en" className="dark scroll-smooth">
+      <body className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-body antialiased bg-bg-base text-text-primary selection:bg-brand-primary selection:text-white`}>
+        <Layout>
+          {children}
+        </Layout>
+        <AIFloatingButton />
       </body>
     </html>
   );

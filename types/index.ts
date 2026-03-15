@@ -102,3 +102,19 @@ export interface DashboardStats {
   resumeScore: number | null;
   roadmapsGenerated: number;
 }
+
+export interface InterviewExperience {
+  id: string;
+  user_id: string;
+  company_id: string;
+  role: string;
+  round: string;
+  content: string;
+  difficulty: Difficulty;
+  outcome: 'offered' | 'rejected' | 'pending' | 'withdrawn';
+  year: number;
+  is_verified: boolean;
+  created_at: string;
+  profiles?: Profile;
+  companies?: Company;
+}

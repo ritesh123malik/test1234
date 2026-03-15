@@ -1,0 +1,85 @@
+:root {
+    /* === BACKGROUNDS === */
+    --bg-base: #080C16;
+    /* page background */
+    --bg-surface: #0C1220;
+    /* cards, panels */
+    --bg-elevated: #111827;
+    /* dropdowns, modals */
+    --bg-overlay: #1A2235;
+    /* hover states */
+    --bg-muted: #1E2D45;
+    /* muted surfaces */
+
+    /* === BRAND COLORS === */
+    --brand-primary: #6366F1;
+    /* indigo — main CTA, links */
+    --brand-secondary: #8B5CF6;
+    /* violet — gradients */
+    --brand-tertiary: #06B6D4;
+    /* cyan — accents */
+    --brand-success: #10B981;
+    /* emerald — good CGPA, success */
+    --brand-warning: #F59E0B;
+    /* amber — streaks, achievements */
+    --brand-danger: #EF4444;
+    /* red — alerts, low CGPA */
+    --brand-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
+
+    /* === RGB VALUES FOR TRANSPARENCY === */
+    --bg-base-rgb: 8, 12, 22;
+    --bg-surface-rgb: 12, 18, 32;
+    --bg-card-rgb: 12, 18, 32;
+
+    /* === TEXT === */
+    --text-primary: #F1F5F9;
+    /* main headings */
+    --text-secondary: #94A3B8;
+    /* body text */
+    --text-muted: #475569;
+    /* placeholder, disabled */
+    --text-accent: #818CF8;
+    /* accent text, links */
+
+    /* === BORDERS === */
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-default: rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-accent: rgba(99, 102, 241, 0.40);
+
+    /* === SHADOWS === */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+    --shadow-glow-brand: 0 0 30px rgba(99, 102, 241, 0.20);
+    --shadow-glow-warn: 0 0 20px rgba(245, 158, 11, 0.25);
+
+    /* === SPACING === */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* === RADIUS === */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-pill: 9999px;
+
+    /* === TYPOGRAPHY === */
+    --font-display: 'Syne', 'Space Grotesk', sans-serif;
+    --font-body: 'DM Sans', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* === TRANSITIONS === */
+    --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}

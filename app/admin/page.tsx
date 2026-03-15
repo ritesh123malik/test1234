@@ -1,16 +1,10 @@
 // app/admin/page.tsx
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminClient from './AdminClient';
 
 export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
-  );
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
@@ -26,7 +20,7 @@ export default async function AdminPage() {
     supabase.from('questions').select('*, company:companies(name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('profiles').select('id, email, full_name, college, created_at').order('created_at', { ascending: false }).limit(50),
     supabase.from('subscriptions').select('*, profile:profiles(email)').neq('plan', 'free').order('created_at', { ascending: false }),
-    supabase.from('question_submissions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+    supabase.from('question_submissions').select('*').order('created_at', { ascending: false }),
   ]);
 
   return (

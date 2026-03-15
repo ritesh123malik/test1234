@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 import AIAssistant from '@/components/ai/AIAssistant';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AIFloatingButtonProps {
     selectedProblem?: string;
@@ -14,23 +15,31 @@ export default function AIFloatingButton({ selectedProblem }: AIFloatingButtonPr
     return (
         <>
             {/* AI Assistant Button */}
-            {!showAI && (
-                <button
-                    onClick={() => setShowAI(true)}
-                    className="fixed bottom-6 right-6 z-40 btn-primary p-4 rounded-full shadow-glow hover:-translate-y-1 transition-all duration-300 group"
-                    aria-label="Ask AI Tutor"
-                >
-                    <Sparkles className="w-6 h-6 group-hover:animate-pulse" />
-                </button>
-            )}
+            <AnimatePresence>
+                {!showAI && (
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        onClick={() => setShowAI(true)}
+                        className="fixed bottom-8 right-8 z-40 w-16 h-16 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded-2xl shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center justify-center border border-white/20 hover:scale-110 active:scale-90 transition-all duration-300 group"
+                        aria-label="Ask Career Architect"
+                    >
+                        <div className="absolute inset-0 bg-white/20 rounded-2xl animate-ping opacity-20 pointer-events-none" />
+                        <SparklesIcon className="w-8 h-8 text-white group-hover:animate-pulse" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
 
             {/* AI Assistant Modal */}
-            {showAI && (
-                <AIAssistant
-                    problem={selectedProblem || "Ask anything about coding problems..."}
-                    onClose={() => setShowAI(false)}
-                />
-            )}
+            <AnimatePresence>
+                {showAI && (
+                    <AIAssistant
+                        problem={selectedProblem || "Consult your Career Architect..."}
+                        onClose={() => setShowAI(false)}
+                    />
+                )}
+            </AnimatePresence>
         </>
     );
 }
