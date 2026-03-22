@@ -24,14 +24,18 @@ const MODELS = {
     // Latest Llama models
     LLAMA_3_3_70B: 'llama-3.3-70b-versatile',
     LLAMA_3_1_8B: 'llama-3.1-8b-instant',
+    LLAMA_3_1_70B: 'llama-3.1-70b-versatile',
     LLAMA_3_1_405B: 'llama-3.1-405b-reasoning',
     
     // Mixtral models
-    MIXTRAL_8x7B: 'mixtral-8x7b-32768',
+    MIXTRAL_8x7B: 'mixtral-8x7b-32768', // Keep constant but mark for fallback update
 
     // Gemma models
     GEMMA_2_9B: 'gemma2-9b-it',
 
+    // specialized/new
+    QWEN_2_5_32B: 'qwen-2.5-32b',
+    
     // Specialized models
     WHISPER: 'whisper-large-v3-turbo'
 };
@@ -79,15 +83,15 @@ export async function generateWithGroq(
     } catch (error: any) {
         console.error('Groq API error:', error);
 
-        // If model fails or is decommissioned, try fallback
+        // If model fails or is decommissioned, try fallback to a reliable production model
         if (
             (error.status === 400 && error.error?.code === 'model_decommissioned') ||
             (error.status === 404) ||
             (error.status === 429) // Rate limit fallback
         ) {
-            if (model !== MODELS.MIXTRAL_8x7B) {
-                console.log(`Model ${model} failed, trying fallback to Mixtral...`);
-                return generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, options);
+            if (model !== MODELS.LLAMA_3_1_8B) {
+                console.log(`Model ${model} failed, trying fallback to Llama 3.1 8B...`);
+                return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_1_8B, options);
             }
         }
 
@@ -134,9 +138,9 @@ export async function explainProblem(problem: string, difficulty: string) {
     const systemPrompt = 'You are a LeetCode expert tutor. Provide clear explanations with examples.';
 
     try {
-        return await generateWithGroq(prompt, systemPrompt, MODELS.GEMMA_2_9B, { temperature: 0.5 });
+        return await generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_1_8B, { temperature: 0.5 });
     } catch (error) {
-        return await generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, { temperature: 0.5 });
+        return await generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B, { temperature: 0.5 });
     }
 }
 
@@ -151,7 +155,7 @@ export async function debugCode(code: string, language: string, userId: string =
     const prompt = `Debug this ${language} code and suggest fixes:\n\n${code}`;
     const systemPrompt = 'You are a debugging expert. Identify issues and explain how to fix them.';
 
-    return generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B);
+    return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_1_8B);
 }
 
 export async function analyzeResume(resumeText: string) {
@@ -233,7 +237,11 @@ export async function generatePracticeQuestions(
 
     const systemPrompt = 'You are a professional technical interviewer for top-tier tech companies. Always respond with valid JSON.';
 
-    const response = await generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B, {
+    // Always use 8B model for question generation to ensure reliability and stay within Edge timeout (25s)
+    // 70B is too slow for generating multiple objects in a single pass at the edge.
+    const modelToUse = MODELS.LLAMA_3_1_8B;
+
+    const response = await generateWithGroq(prompt, systemPrompt, modelToUse, {
         temperature: 0.7,
         response_format: { type: 'json_object' }
     });

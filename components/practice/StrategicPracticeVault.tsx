@@ -206,9 +206,10 @@ export default function StrategicPracticeVault() {
             } else {
                 throw new Error(data.error || 'Failed to fetch');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('Neural Link Error: Failed to generate question set.');
+            const errorMsg = error.message || 'Failed to generate question set.';
+            toast.error(`Neural Link Error: ${errorMsg}`);
             setView('config');
         } finally {
             setLoading(false);

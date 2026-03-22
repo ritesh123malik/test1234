@@ -20,6 +20,32 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
         .single() as { data: any, error: any };
 
     if (error || !profile) {
+        // FAIL-SAFE: If profile is missing but user is authenticated, create it on-the-fly
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.id === userId) {
+            console.log(`Auto-creating missing profile for user ${userId}`);
+            const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: userId,
+                    email: user.email!,
+                    full_name: user.user_metadata?.full_name || 'Operative',
+                    username: user.user_metadata?.username || user.email?.split('@')[0],
+                    is_premium: false
+                })
+                .select()
+                .single();
+
+            if (createError) {
+                console.error('Failed to auto-create profile:', createError);
+                return { allowed: false, reason: 'Profile not found and could not be created.' };
+            }
+            
+            // Also create initial free subscription
+            await supabase.from('subscriptions').insert({ user_id: userId, plan: 'free', status: 'active' });
+            
+            return { allowed: true, isPremium: false, remaining: FREE_LIMITS[feature] || 5 };
+        }
         return { allowed: false, reason: 'Profile not found' };
     }
 
