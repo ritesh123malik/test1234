@@ -1,0 +1,99 @@
+import Groq from 'groq-sdk';
+
+// Lazy initialization of Groq client
+let groqInstance: Groq | null = null;
+
+export function getGroqClient() {
+    if (!groqInstance) {
+        const apiKey = process.env.GROQ_API_KEY;
+        
+        if (!apiKey && typeof window === 'undefined') {
+            // Log a loud error on the server if the key is missing
+            console.error('MISSING GROQ_API_KEY: AI features will not work. Add this to your Vercel/environment variables.');
+        }
+
+        groqInstance = new Groq({
+            apiKey: apiKey || 'placeholder_key_for_build_safety',
+        });
+    }
+    return groqInstance;
+}
+
+// Current Groq models as of 2026
+const MODELS = {
+    // Latest Llama models
+    LLAMA_3_3_70B: 'llama-3.3-70b-versatile',
+    LLAMA_3_1_8B: 'llama-3.1-8b-instant',
+    LLAMA_3_1_405B: 'llama-3.1-405b-reasoning',
+    
+    // Mixtral models
+    MIXTRAL_8x7B: 'mixtral-8x7b-32768',
+
+    // Gemma models
+    GEMMA_2_9B: 'gemma2-9b-it',
+
+    // Specialized models
+    WHISPER: 'whisper-large-v3-turbo'
+};
+
+export interface GroqOptions {
+    temperature?: number;
+    max_tokens?: number;
+    top_p?: number;
+    response_format?: { type: 'json_object' | 'text' };
+}
+
+export async function generateWithGroq(
+    prompt: string,
+    systemPrompt: string = 'You are a helpful AI assistant.',
+    model: string = MODELS.LLAMA_3_3_70B,
+    options: GroqOptions = {}
+) {
+    const { 
+        temperature = 0.7, 
+        max_tokens = 4000, 
+        top_p = 0.95, 
+        response_format 
+    } = options;
+
+    if (!process.env.GROQ_API_KEY) {
+        throw new Error('AI Service misconfigured: Missing GROQ_API_KEY. Please check your environment variables.');
+    }
+
+    try {
+        console.log(`Using Groq model: ${model}`);
+
+        const completion = await getGroqClient().chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: prompt }
+            ],
+            model: model,
+            temperature: temperature,
+            max_tokens: max_tokens,
+            top_p: top_p,
+            ...(response_format && { response_format })
+        });
+
+        return completion.choices[0]?.message?.content || '';
+    } catch (error: any) {
+        console.error('Groq API error:', error);
+
+        // If model fails or is decommissioned, try fallback
+        if (
+            (error.status === 400 && error.error?.code === 'model_decommissioned') ||
+            (error.status === 404) ||
+            (error.status === 429) // Rate limit fallback
+        ) {
+            if (model !== MODELS.MIXTRAL_8x7B) {
+                console.log(`Model ${model} failed, trying fallback to Mixtral...`);
+                return generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, options);
+            }
+        }
+
+        throw error;
+    }
+}
+
+// --- Rest of the file remains the same ---
+// (Exporting generatePracticeQuestions, getAIResponse, etc.)

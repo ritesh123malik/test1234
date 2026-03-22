@@ -10,6 +10,8 @@ import {
     generatePracticeQuestions
 } from '@/lib/ai-service';
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

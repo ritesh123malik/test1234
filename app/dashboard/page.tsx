@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   try {
     const authPromise = supabase.auth.getUser();
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Auth timeout')), 5000)
+      setTimeout(() => reject(new Error('Auth timeout')), 9000)
     );
     const { data } = await Promise.race([authPromise, timeoutPromise]) as any;
     user = data?.user ?? null;
@@ -24,23 +24,23 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login?redirect=/dashboard');
 
   // Fetch all user data in parallel
-  const [profileRes, subRes, progressRes, bookmarksRes, resumeRes, roadmapsRes] = await Promise.all([
+  const [profileRes, subRes, progressRes, bookmarksRes, resumeRes, roadmapsRes, sheetsRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).single(),
     supabase.from('user_progress').select('*, company:companies(name, slug)').eq('user_id', user.id).order('last_studied_at', { ascending: false }).limit(5),
-    supabase.from('bookmarks').select('id').eq('user_id', user.id),
+    supabase.from('bookmarks').select('id', { count: 'exact' }).eq('user_id', user.id),
     supabase.from('resumes').select('score, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
-    supabase.from('roadmaps').select('id').eq('user_id', user.id),
-    supabase.from('question_sheets').select('id').eq('user_id', user.id),
+    supabase.from('roadmaps').select('id', { count: 'exact' }).eq('user_id', user.id),
+    supabase.from('question_sheets').select('id', { count: 'exact' }).eq('user_id', user.id),
   ]);
 
   const profile = profileRes.data;
   const subscription = subRes.data;
   const progress = progressRes.data || [];
-  const bookmarkCount = bookmarksRes.data?.length || 0;
+  const bookmarkCount = bookmarksRes.count || 0;
   const latestResume = resumeRes.data?.[0];
-  const roadmapCount = roadmapsRes.data?.length || 0;
-  const sheetCount = subRes.data?.length || 0; // Temporary fallback
+  const roadmapCount = roadmapsRes.count || 0;
+  const sheetCount = sheetsRes.count || 0;
   const isPro = subscription?.plan !== 'free' && subscription?.status === 'active';
   const firstName = profile?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'there';
 

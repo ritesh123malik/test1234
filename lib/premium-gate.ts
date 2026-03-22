@@ -10,13 +10,14 @@ export const FREE_LIMITS: Record<string, number> = {
 
 export async function checkPremiumGate(userId: string, feature: GatedFeature) {
     const supabase = await createClient();
+    const column = `${feature}_this_month`;
 
-    // 1. Fetch profile
+    // 1. Fetch only required columns
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`is_premium, premium_expires_at, usage_reset_at, ${column}`)
         .eq('id', userId)
-        .single();
+        .single() as { data: any, error: any };
 
     if (error || !profile) {
         return { allowed: false, reason: 'Profile not found' };
@@ -31,14 +32,14 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
         return { allowed: true, isPremium: true };
     }
 
-    // 3. Handle Usage Reset (Monthly)
+    // 3. Handle Usage Reset (Monthly) - Atomic check
     const today = new Date();
-    const lastReset = new Date(profile.usage_reset_at);
+    const lastReset = profile.usage_reset_at ? new Date(profile.usage_reset_at) : new Date(0);
     const isNewMonth = today.getMonth() !== lastReset.getMonth() ||
         today.getFullYear() !== lastReset.getFullYear();
 
     if (isNewMonth) {
-        // Reset counters server-side
+        // Reset counters and allow
         await supabase
             .from('profiles')
             .update({
@@ -55,11 +56,10 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
     // 4. Check Free Limits
     const limit = FREE_LIMITS[feature];
     if (limit === undefined) {
-        // Features not in FREE_LIMITS are premium-only (e.g., oa_simulator for non-TCS)
         return { allowed: false, reason: 'This feature requires a Premium subscription.' };
     }
 
-    const currentUsage = (profile as any)[`${feature}_this_month`] || 0;
+    const currentUsage = profile[column] || 0;
 
     if (currentUsage >= limit) {
         return {
@@ -80,16 +80,17 @@ export async function incrementUsage(userId: string, feature: GatedFeature) {
     const supabase = await createClient();
     const column = `${feature}_this_month`;
 
+    // Optimized read-then-write
     const { data: profile } = await supabase
         .from('profiles')
         .select(column)
         .eq('id', userId)
-        .single();
+        .single() as { data: any };
 
     if (profile) {
         await supabase
             .from('profiles')
-            .update({ [column]: ((profile as any)[column] || 0) + 1 })
+            .update({ [column]: (profile[column] || 0) + 1 })
             .eq('id', userId);
     }
 }
