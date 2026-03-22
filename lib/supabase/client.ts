@@ -1,13 +1,22 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// Use placeholders during build time to prevent "supabaseUrl is required" errors
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-
 export function createClient() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Fallback only during build time to prevent build-time crashes.
+    if (!supabaseUrl || !supabaseAnonKey) {
+        if (typeof window !== 'undefined') {
+            console.error('MISSING SUPABASE ENV VARS: Update your .env.local or Vercel dashboard.')
+        }
+        return createBrowserClient(
+            supabaseUrl || 'https://placeholder.supabase.co',
+            supabaseAnonKey || 'placeholder'
+        )
+    }
+
     return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }
 
 // Singleton for easy import in client components
 export const supabase = createClient()
-
