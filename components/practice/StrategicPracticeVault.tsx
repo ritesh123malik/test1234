@@ -21,6 +21,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 // --- Topic Definitions ---
 const TOPICS: Record<string, {
@@ -188,9 +189,13 @@ export default function StrategicPracticeVault() {
         setSubtopicScores({});
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
             const res = await fetch('/api/ai', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
                 body: JSON.stringify({
                     action: 'generate-questions',
                     topic: TOPICS[currentTopicKey].name,

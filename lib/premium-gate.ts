@@ -18,7 +18,7 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
         .from('profiles')
         .select(`is_premium, premium_expires_at, usage_reset_at, ${column}`)
         .eq('id', userId)
-        .single() as { data: any, error: any };
+        .maybeSingle() as { data: any, error: any };
 
     if (error || !profile) {
         // FAIL-SAFE: If profile is missing but user is authenticated, create it on-the-fly
