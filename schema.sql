@@ -28,6 +28,21 @@ alter table profiles add column if not exists cgpa numeric(3,2) default 0.0;
 alter table profiles add column if not exists city text;
 alter table profiles add column if not exists level int default 1;
 
+-- Missing Premium & Usage Columns for lib/premium-gate.ts
+alter table profiles add column if not exists is_premium boolean default false;
+alter table profiles add column if not exists premium_expires_at timestamptz;
+alter table profiles add column if not exists usage_reset_at date default (now() at time zone 'utc')::date;
+
+-- Usage Tracking Columns
+alter table profiles add column if not exists ai_interviews_this_month int default 0;
+alter table profiles add column if not exists ats_scans_this_month int default 0;
+alter table profiles add column if not exists p2p_sessions_this_month int default 0;
+alter table profiles add column if not exists aptitude_mocks_this_month int default 0;
+alter table profiles add column if not exists oa_simulator_this_month int default 0;
+alter table profiles add column if not exists dsa_patterns_this_month int default 0;
+alter table profiles add column if not exists audio_hints_this_month int default 0;
+alter table profiles add column if not exists ai_roadmap_this_month int default 0;
+
 -- ─── SUBSCRIPTIONS ──────────────────────────────────────────
 create table if not exists subscriptions (
   id uuid primary key default gen_random_uuid(),

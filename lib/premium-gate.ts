@@ -39,8 +39,13 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
                 .single();
 
             if (createError) {
-                console.error('Failed to auto-create profile with admin:', createError);
-                return { allowed: false, reason: 'Profile not found and could not be created even with admin access.' };
+                console.error('CRITICAL: Failed to auto-create profile with admin:', {
+                    message: createError.message,
+                    code: createError.code,
+                    details: createError.details,
+                    hint: createError.hint
+                });
+                return { allowed: false, reason: `Profile creation failed: ${createError.message}. This usually means the profiles table is missing columns.` };
             }
             
             // Also create initial free subscription using admin
