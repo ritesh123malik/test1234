@@ -2,10 +2,18 @@ import Groq from 'groq-sdk';
 
 // Lazy initialization of Groq client
 let groqInstance: Groq | null = null;
+
 export function getGroqClient() {
     if (!groqInstance) {
+        const apiKey = process.env.GROQ_API_KEY;
+        
+        if (!apiKey && typeof window === 'undefined') {
+            // Log a loud error on the server if the key is missing
+            console.error('MISSING GROQ_API_KEY: AI features will not work. Add this to your Vercel/environment variables.');
+        }
+
         groqInstance = new Groq({
-            apiKey: process.env.GROQ_API_KEY || '',
+            apiKey: apiKey || 'placeholder_key_for_build_safety',
         });
     }
     return groqInstance;
@@ -28,7 +36,6 @@ const MODELS = {
     WHISPER: 'whisper-large-v3-turbo'
 };
 
-
 export interface GroqOptions {
     temperature?: number;
     max_tokens?: number;
@@ -48,6 +55,10 @@ export async function generateWithGroq(
         top_p = 0.95, 
         response_format 
     } = options;
+
+    if (!process.env.GROQ_API_KEY) {
+        throw new Error('AI Service misconfigured: Missing GROQ_API_KEY. Please check your environment variables.');
+    }
 
     try {
         console.log(`Using Groq model: ${model}`);
