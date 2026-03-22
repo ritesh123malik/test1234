@@ -95,6 +95,9 @@ export default function CodeforcesConnect() {
             setProfile(data);
             toast.success('Codeforces Protocol Established');
             setHandle('');
+
+            // Trigger initial sync to populate heatmap/history
+            await handleSync();
         } catch (err: any) {
             toast.error('Connection Failed: ' + err.message);
         } finally {

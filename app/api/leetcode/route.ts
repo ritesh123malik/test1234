@@ -10,40 +10,21 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { username } = await req.json();
+        const { query, variables } = await req.json();
 
-        const query = `
-      query userPublicProfile($username: String!) {
-        matchedUser(username: $username) {
-          username
-          submitStats: submitStatsGlobal {
-            acSubmissionNum {
-              difficulty
-              count
-              submissions
-            }
-          }
-          profile {
-            ranking
-            reputation
-            starRating
-          }
-          contributions {
-            points
-            questionCount
-            testcaseCount
-          }
-          submissionCalendar
+        if (!query) {
+            return NextResponse.json({ error: 'GraphQL Query Required' }, { status: 400 });
         }
-      }
-    `;
 
         const response = await fetch('https://leetcode.com/graphql', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            },
             body: JSON.stringify({
                 query,
-                variables: { username }
+                variables
             })
         });
 

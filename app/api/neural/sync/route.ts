@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // 1. Get user handles
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('leetcode_handle, codeforces_handle, github_handle, gfg_handle, codechef_handle, hackerrank_handle')
+      .select('leetcode_handle, codeforces_handle, github_handle, gfg_username, codechef_username, hackerrank_username')
       .eq('id', user.id)
       .single();
 
@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       profile.leetcode_handle ? leetcodeAPI.fetchStats(profile.leetcode_handle) : null,
       profile.codeforces_handle ? codeforcesAPI.fetchStats(profile.codeforces_handle) : null,
       profile.github_handle ? githubAPI.fetchStats(profile.github_handle) : null,
-      (profile as any).gfg_handle ? fetchGFGStats((profile as any).gfg_handle) : null,
-      (profile as any).codechef_handle ? fetchCodeChefStats((profile as any).codechef_handle) : null,
-      (profile as any).hackerrank_handle ? fetchHackerRankStats((profile as any).hackerrank_handle) : null,
+      (profile as any).gfg_username ? fetchGFGStats((profile as any).gfg_username) : null,
+      (profile as any).codechef_username ? fetchCodeChefStats((profile as any).codechef_username) : null,
+      (profile as any).hackerrank_username ? fetchHackerRankStats((profile as any).hackerrank_username) : null,
     ]);
 
     if (lc) stats.leetcode = lc;

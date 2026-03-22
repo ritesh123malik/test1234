@@ -117,6 +117,9 @@ export default function LeetCodeConnect() {
             setProfile(data);
             toast.success('LeetCode Protocol Linked');
             setUsername('');
+            
+            // Trigger initial sync to populate heatmap/history
+            await handleSync();
         } catch (err: any) {
             toast.error('Linkage Failed: ' + err.message);
         } finally {
