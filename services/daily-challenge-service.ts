@@ -34,7 +34,7 @@ export async function getTodaysChallenge(userId: string, lcDiff?: string, cfLeve
     const challengeMap: Record<string, any> = {};
 
     for (const p of platforms) {
-        let challenge = challenges?.find(c => c.platform === p);
+        let challenge: any = challenges?.find(c => c.platform === p);
         const question = Array.isArray(challenge?.question) ? challenge?.question[0] : challenge?.question;
         
         // If challenge exists but difficulty doesn't match, or if it doesn't exist, get from pool
