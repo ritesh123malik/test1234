@@ -6,7 +6,8 @@ import {
     getWeaknessSummary,
     getScoreTrend,
     getDimensionBreakdown,
-    getSpeechSummary
+    getSpeechSummary,
+    getUnifiedActivityGrid
 } from '@/services/heatmap-service';
 
 export async function GET(req: NextRequest) {
@@ -31,18 +32,21 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ dimensions: await getDimensionBreakdown(user.id) });
         if (section === 'speech')
             return NextResponse.json({ speech: await getSpeechSummary(user.id) });
+        if (section === 'unified')
+            return NextResponse.json({ unified: await getUnifiedActivityGrid(user.id) });
 
         // Default: fetch all in parallel
-        const [grid, topics, summary, trend, dimensions, speech] = await Promise.all([
+        const [grid, topics, summary, trend, dimensions, speech, unified] = await Promise.all([
             getActivityGrid(user.id),
             getTopicScores(user.id),
             getWeaknessSummary(user.id),
             getScoreTrend(user.id),
             getDimensionBreakdown(user.id),
             getSpeechSummary(user.id),
+            getUnifiedActivityGrid(user.id),
         ]);
 
-        return NextResponse.json({ grid, topics, summary, trend, dimensions, speech });
+        return NextResponse.json({ grid, topics, summary, trend, dimensions, speech, unified });
     } catch (err: any) {
         console.error('Heatmap API Error:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });

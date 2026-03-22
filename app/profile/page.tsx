@@ -6,9 +6,12 @@ import { supabase } from '@/lib/supabase';
 import LeetCodeConnect from '@/components/leetcode/LeetCodeConnect';
 import CodeforcesConnect from '@/components/codeforces/CodeforcesConnect';
 import MySubmissions from '@/components/profile/MySubmissions';
-import SkillGapRadar from '@/components/profile/SkillGapRadar';
 import SpeechTrendChart from '@/components/interviewer/SpeechTrendChart';
 import CollegeCitySetup from '@/components/leaderboard/CollegeCitySetup';
+import RatingTrajectoryChart from '@/components/charts/RatingTrajectoryChart';
+import SkillRadarChart from '@/components/charts/SkillRadarChart';
+import SocialShareCard from '@/components/profile/SocialShareCard';
+import VerificationModal from '@/components/profile/VerificationModal';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -38,7 +41,8 @@ import {
   Share2,
   Mail,
   Shield,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,9 +61,42 @@ export default function ProfilePage() {
   });
   const [speechSessions, setSpeechSessions] = useState<any[]>([]);
 
+  // Mock data for Phase 2 Visuals
+  const ratingData = [
+    { date: '2026-01-01', leetcode: 1650, codeforces: 1200 },
+    { date: '2026-01-15', leetcode: 1720, codeforces: 1250 },
+    { date: '2026-02-01', leetcode: 1805, codeforces: 1320 },
+    { date: '2026-02-15', leetcode: 1890, codeforces: 1380 },
+    { date: '2026-03-01', leetcode: 1950, codeforces: 1450 },
+    { date: '2026-03-15', leetcode: 2010, codeforces: 1520 },
+  ];
+
+  const skillData = [
+    { subject: 'DS', A: 85, fullMark: 100 },
+    { subject: 'Algo', A: 78, fullMark: 100 },
+    { subject: 'System Design', A: 42, fullMark: 100 },
+    { subject: 'DP', A: 65, fullMark: 100 },
+    { subject: 'Trees', A: 90, fullMark: 100 },
+    { subject: 'Graphs', A: 72, fullMark: 100 },
+    { subject: 'Math', A: 55, fullMark: 100 },
+    { subject: 'Bitmask', A: 48, fullMark: 100 },
+  ];
+
+  const socialStats = {
+    leetcodeSolved: profile?.neural_cache?.leetcode?.totalSolved || 438,
+    codeforcesRating: profile?.neural_cache?.codeforces?.rating || 1520,
+    neuralScore: profile?.neural_power_score || 8420,
+    topLanguages: [
+      { name: 'TypeScript', color: '#3178C6', percent: 45 },
+      { name: 'Python', color: '#3776AB', percent: 35 },
+      { name: 'C++', color: '#00599C', percent: 20 },
+    ]
+  };
+
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'referrals'>('profile');
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -251,7 +288,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mb-8">
-                  <h2 className="text-2xl font-display font-bold text-[var(--text-primary)] mb-1">{profile?.full_name || 'Anonymous Strategist'}</h2>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-2xl font-display font-bold text-[var(--text-primary)]">{profile?.full_name || 'Anonymous Strategist'}</h2>
+                    {profile?.is_placed_verified && (
+                      <div className="p-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        <Shield className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" />
+                      </div>
+                    )}
+                  </div>
                   <p className="text-[var(--text-muted)] font-mono text-[10px] tracking-widest uppercase opacity-60 italic">{profile?.referral_code ? `Node_${profile.referral_code}` : 'Awaiting_Activation'}</p>
                 </div>
 
@@ -353,8 +397,23 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
+
+                {!profile?.is_placed_verified && (
+                  <button 
+                    onClick={() => setIsVerificationModalOpen(true)}
+                    className="w-full mt-6 py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 group"
+                  >
+                    <Shield className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+                    Verify_Placement_Auth
+                  </button>
+                )}
               </div>
             </div>
+
+            <VerificationModal 
+              isOpen={isVerificationModalOpen}
+              onClose={() => setIsVerificationModalOpen(false)}
+            />
 
             {/* Strategic Insights Card */}
             <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl relative overflow-hidden">
@@ -400,10 +459,10 @@ export default function ProfilePage() {
             {/* Tab Navigation */}
             <div className="flex bg-[var(--bg-surface)] p-1.5 rounded-2xl border border-[var(--border-subtle)] gap-2 mb-6">
               {[
-                { id: 'profile', icon: UserIcon, label: 'Identity' },
-                { id: 'security', icon: Shield, label: 'Protocols' },
-                { id: 'referrals', icon: Share2, label: 'Network' }
-              ].map((tab) => (
+                 { id: 'profile', icon: UserIcon, label: 'Identity' },
+                 { id: 'security', icon: Shield, label: 'Protocols' },
+                 { id: 'referrals', icon: Share2, label: 'Social' }
+               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
@@ -522,26 +581,40 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="bg-[var(--bg-base)]/50 border border-dashed border-[var(--border-subtle)] rounded-3xl p-8 text-center">
-                  {profile?.referral_code ? (
-                    <div className="space-y-6">
-                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Your_Personal_Protocol_ID</p>
-                      <div className="flex items-center justify-center gap-4">
-                        <code className="text-4xl font-black text-white tracking-[0.2em]">{profile.referral_code}</code>
-                        <button onClick={copyRef} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
-                          {copied ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} />}
-                        </button>
-                      </div>
-                      <p className="text-xs text-[var(--text-muted)] font-medium max-w-xs mx-auto">Invite fellow strategists to earn Elite status and exclusive dataset access.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6 py-4">
-                      <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-tight">Referral Protocol Offline</p>
-                      <button onClick={generateReferral} className="px-8 py-4 bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98]">Initialize Network Expansion</button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                 <div className="bg-[var(--bg-base)]/50 border border-dashed border-[var(--border-subtle)] rounded-3xl p-8 text-center mb-8">
+                   {profile?.referral_code ? (
+                     <div className="space-y-6">
+                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Your_Personal_Protocol_ID</p>
+                       <div className="flex items-center justify-center gap-4">
+                         <code className="text-4xl font-black text-white tracking-[0.2em]">{profile.referral_code}</code>
+                         <button onClick={copyRef} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+                           {copied ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} />}
+                         </button>
+                       </div>
+                       <p className="text-xs text-[var(--text-muted)] font-medium max-w-xs mx-auto">Invite fellow strategists to earn Elite status and exclusive dataset access.</p>
+                     </div>
+                   ) : (
+                     <div className="space-y-6 py-4">
+                       <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-tight">Referral Protocol Offline</p>
+                       <button onClick={generateReferral} className="px-8 py-4 bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98]">Initialize Network Expansion</button>
+                     </div>
+                   )}
+                 </div>
+
+                 {/* Social Card [NEW Phase 2] */}
+                 <div className="pt-6 border-t border-white/5">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 px-2">Professional Identity Card</h4>
+                    <SocialShareCard 
+                        user={{
+                            name: profile?.full_name || 'Career Architect',
+                            role: profile?.target_role || 'SDE',
+                            college: profile?.college || 'IIT Madras',
+                            avatar: profile?.avatar_url
+                        }}
+                        stats={socialStats}
+                    />
+                 </div>
+               </div>
             )}
           </div>
 
@@ -566,14 +639,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-12 items-center">
-                {/* Radar visualization placeholder */}
-                <div className="relative aspect-square bg-[var(--bg-base)]/50 border border-dashed border-[var(--border-subtle)] rounded-[3rem] flex items-center justify-center overflow-hidden">
+                {/* Radar visualization */}
+                <div className="relative aspect-square bg-[var(--bg-base)]/50 border border-[var(--border-subtle)] rounded-[3rem] flex items-center justify-center overflow-hidden">
                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--brand-primary)_0%,transparent_70%)]" />
-                  <div className="text-center p-8">
-                    <ChartBarIcon className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4 opacity-20" />
-                    <p className="text-[var(--text-muted)] font-bold text-sm tracking-widest uppercase">Initializing Visualization Engine...</p>
-                  </div>
-                  {/* Skill labels orbiting */}
+                  <SkillRadarChart data={skillData} />
                 </div>
 
                 <div className="space-y-8">
@@ -611,31 +680,42 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-10">
-              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
-                <div className="absolute top-10 left-10 z-10">
-                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#FFA116]/10 border border-[#FFA116]/30 rounded-xl flex items-center justify-center">
-                      <LeetCodeIcon className="w-5 h-5 text-[#FFA116]" />
-                    </div>
-                    LeetCode Sync
-                  </h3>
+              <div className="grid md:grid-cols-2 gap-10">
+                <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
+                  <div className="absolute top-10 left-10 z-10">
+                    <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#FFA116]/10 border border-[#FFA116]/30 rounded-xl flex items-center justify-center">
+                        <LeetCodeIcon className="w-5 h-5 text-[#FFA116]" />
+                      </div>
+                      LeetCode Sync
+                    </h3>
+                  </div>
+                  <LeetCodeConnect />
                 </div>
-                <LeetCodeConnect />
+
+                <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
+                  <div className="absolute top-10 left-10 z-10">
+                    <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
+                        <TrophyIcon className="w-5 h-5 text-blue-400" />
+                      </div>
+                      Codeforces Sync
+                    </h3>
+                  </div>
+                  <CodeforcesConnect />
+                </div>
               </div>
 
-              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
-                <div className="absolute top-10 left-10 z-10">
-                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
-                      <TrophyIcon className="w-5 h-5 text-blue-400" />
-                    </div>
-                    Codeforces Sync
-                  </h3>
-                </div>
-                <CodeforcesConnect />
+              {/* Rating Trajectory [NEW Phase 2] */}
+              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-base)]">
+                <h3 className="text-2xl font-display font-bold text-white mb-8 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  Rating Trajectory
+                </h3>
+                <RatingTrajectoryChart data={ratingData} />
               </div>
-            </div>
 
             {/* My Submissions [NEW] */}
             <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-12 shadow-2xl">

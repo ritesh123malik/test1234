@@ -17,6 +17,23 @@ export async function getActivityGrid(userId: string) {
     return data ?? [];
 }
 
+// ── GET UNIFIED ACTIVITY GRID (Phase 3) ──────────────────────
+export async function getUnifiedActivityGrid(userId: string) {
+    const supabase = await createClient();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const { data, error } = await supabase
+        .from('v_unified_heatmap_grid')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('activity_date', oneYearAgo.toISOString().split('T')[0])
+        .order('activity_date', { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+}
+
 // ── GET TOPIC SCORES (radar chart data) ──────────────────────
 export async function getTopicScores(userId: string) {
     const supabase = await createClient();

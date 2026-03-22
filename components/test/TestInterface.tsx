@@ -7,8 +7,10 @@ import {
     ChevronRightIcon,
     ChevronLeftIcon,
     CheckCircleIcon,
-    PlayIcon
+    PlayIcon,
+    BookOpenIcon
 } from '@heroicons/react/24/outline';
+import ProblemNotes from '../problems/ProblemNotes';
 
 interface TestInterfaceProps {
     testId: string;
@@ -169,6 +171,15 @@ export default function TestInterface({ testId, company, duration, questions, on
                                 <span>{answers[question.id] ? 'Completed!' : 'Mark as Completed'}</span>
                             </button>
                         </div>
+                    </div>
+
+                    {/* Problem Notes System [Phase 3] */}
+                    <div className="mt-8">
+                        <ProblemNotes 
+                            problemId={question.id || `test-${testId}-${currentIndex}`} 
+                            platform={question.platform || 'leetcode'} 
+                            initialTitle={question.title}
+                        />
                     </div>
 
                     {/* Navigation */}

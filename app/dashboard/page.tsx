@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BookOpen, FileText, Map, Bookmark, TrendingUp, ArrowRight, Zap, Clock, Library, Layout, Trophy } from 'lucide-react';
 import ContestCalendar from '@/components/dashboard/ContestCalendar';
 import ProfileStats from '@/components/dashboard/ProfileStats';
+import UnifiedHeatmap from '@/components/dashboard/UnifiedHeatmap';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -24,7 +25,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login?redirect=/dashboard');
 
   // Fetch all user data in parallel
-  const [profileRes, subRes, progressRes, bookmarksRes, resumeRes, roadmapsRes, sheetsRes] = await Promise.all([
+  const [profileRes, subRes, progressRes, bookmarksRes, resumeRes, roadmapsRes, sheetsRes, revisionRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).single(),
     supabase.from('user_progress').select('*, company:companies(name, slug)').eq('user_id', user.id).order('last_studied_at', { ascending: false }).limit(5),
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
     supabase.from('resumes').select('score, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
     supabase.from('roadmaps').select('id', { count: 'exact' }).eq('user_id', user.id),
     supabase.from('question_sheets').select('id', { count: 'exact' }).eq('user_id', user.id),
+    supabase.from('problem_notes').select('id', { count: 'exact' }).eq('user_id', user.id).lte('next_revision_at', new Date().toISOString()),
   ]);
 
   const profile = profileRes.data;
@@ -41,6 +43,7 @@ export default async function DashboardPage() {
   const latestResume = resumeRes.data?.[0];
   const roadmapCount = roadmapsRes.count || 0;
   const sheetCount = sheetsRes.count || 0;
+  const revisionCount = revisionRes.count || 0;
   const isPro = subscription?.plan !== 'free' && subscription?.status === 'active';
   const firstName = profile?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'there';
 
@@ -92,6 +95,7 @@ export default async function DashboardPage() {
           {[
             { label: 'Strategic Bookmarks', value: bookmarkCount, icon: Bookmark, color: 'var(--brand-secondary)', suffix: 'Assets' },
             { label: 'Operation Roadmaps', value: roadmapCount, icon: Map, color: 'var(--brand-tertiary)', suffix: 'Plans' },
+            { label: 'Revision Loop', value: revisionCount, icon: Clock, color: 'var(--brand-warning)', suffix: 'Due' },
           ].map(({ label, value, icon: Icon, color, suffix }) => (
             <div key={label} className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-8 rounded-[2.5rem] shadow-xl relative group overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 opacity-5 group-hover:opacity-10 transition-opacity translate-x-8 -translate-y-8" style={{ color }}>
@@ -209,6 +213,11 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Neural Activity Stream [NEW Phase 3] */}
+        <div className="mt-24 mb-16 glass-card rounded-[3rem] border border-[var(--border-subtle)] p-12 bg-gradient-to-br from-[var(--bg-card)]/50 to-transparent shadow-2xl">
+           <UnifiedHeatmap />
         </div>
 
         {/* Global Contest Intelligence */}

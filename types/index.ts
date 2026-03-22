@@ -26,6 +26,25 @@ export interface Profile {
   professional_headline?: string;
   bio?: string;
   social_links?: any;
+  // Platform Handles
+  gfg_handle?: string;
+  codechef_handle?: string;
+  hackerrank_handle?: string;
+  atcoder_handle?: string;
+}
+
+export interface UnifiedSubmission {
+  id: string;
+  user_id: string;
+  platform: 'leetcode' | 'codeforces' | 'gfg' | 'codechef' | 'hackerrank' | 'atcoder';
+  problem_id: string;
+  problem_title: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  solved_at: string;
+  tags?: string[];
+  contest_id?: string;
+  rating_change?: number;
+  created_at: string;
 }
 
 export interface Subscription {
@@ -135,6 +154,24 @@ export interface NeuralStats {
     followers: number;
     stars: number;
     contributions: number;
+  };
+  gfg?: {
+    totalSolved: number;
+    easy: number;
+    medium: number;
+    hard: number;
+    ranking: number;
+  };
+  codechef?: {
+    rating: number;
+    globalRank: number;
+    countryRank: number;
+    stars: string;
+    totalSolved: number;
+  };
+  hackerrank?: {
+    totalSolved: number;
+    badges: number;
   };
   timestamp: string;
 }

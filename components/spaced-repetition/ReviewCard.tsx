@@ -14,6 +14,7 @@ import {
 import { REVIEW_RATINGS, DueCard } from '@/lib/spaced-repetition/service';
 import { supabase } from '@/lib/supabase';
 import { statsService } from '@/lib/stats-service';
+import ProblemNotes from '../problems/ProblemNotes';
 
 interface ReviewCardProps {
     card: DueCard;
@@ -151,8 +152,6 @@ export default function ReviewCard({ card, onReview, onSkip }: ReviewCardProps) 
                                     <h4 className="font-semibold text-gray-900 mb-3">Solution Approach:</h4>
                                     <p className="text-gray-700 mb-4">
                                         {/* You can fetch the actual solution from your database */}
-                                        This is where the solution explanation would appear.
-                                        Consider linking to LeetCode for the full solution.
                                     </p>
                                     <a
                                         href={card.leetcode_url}
@@ -162,6 +161,15 @@ export default function ReviewCard({ card, onReview, onSkip }: ReviewCardProps) 
                                     >
                                         View on LeetCode →
                                     </a>
+                                </div>
+
+                                {/* Problem Notes System [Phase 3] */}
+                                <div className="mt-8">
+                                    <ProblemNotes 
+                                        problemId={card.question_id} 
+                                        platform={(card as any).platform || 'leetcode'} 
+                                        initialTitle={card.question}
+                                    />
                                 </div>
                             </motion.div>
 

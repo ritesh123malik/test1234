@@ -13,6 +13,11 @@ import {
     ChevronRight
 } from 'lucide-react';
 
+import { 
+    getGoogleCalendarUrl, 
+    downloadICS 
+} from '@/lib/utils/calendar';
+
 interface Contest {
     id: string;
     name: string;
@@ -32,7 +37,6 @@ export default function ContestCalendar() {
             try {
                 const res = await fetch('/api/contests');
                 const data = await res.json();
-                // API returns array directly now
                 setContests(Array.isArray(data) ? data : []);
             } catch (err) {
                 setError('Failed to load contest schedule');
@@ -43,11 +47,13 @@ export default function ContestCalendar() {
         fetchContests();
     }, []);
 
-    const addToGoogleCalendar = (contest: Contest) => {
-        const start = new Date(contest.startTime).toISOString().replace(/-|:|\.\d\d\d/g, '');
-        const end = new Date(new Date(contest.startTime).getTime() + (contest.duration * 1000)).toISOString().replace(/-|:|\.\d\d\d/g, '');
-        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(contest.name)}&dates=${start}/${end}&details=${encodeURIComponent('Sync via placement-intel Dashboard')}&location=${encodeURIComponent(contest.url)}`;
+    const handleGoogleCalendar = (contest: Contest) => {
+        const url = getGoogleCalendarUrl(contest);
         window.open(url, '_blank');
+    };
+
+    const handleICSDownload = (contest: Contest) => {
+        downloadICS(contest);
     };
 
     if (isLoading) return (
@@ -112,18 +118,25 @@ export default function ContestCalendar() {
 
                             <div className="flex items-center gap-3 pl-4">
                                 <button
-                                    onClick={() => addToGoogleCalendar(c)}
-                                    className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--brand-primary)] text-[var(--text-muted)] hover:text-white rounded-xl transition-all shadow-sm"
+                                    onClick={() => handleGoogleCalendar(c)}
+                                    className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--brand-primary)] text-[var(--text-muted)] hover:text-white rounded-xl transition-all shadow-sm group/btn"
                                     title="Add to Google Calendar"
                                 >
-                                    <Plus size={16} />
+                                    <Plus size={16} className="group-hover/btn:scale-110 transition-transform" />
+                                </button>
+                                <button
+                                    onClick={() => handleICSDownload(c)}
+                                    className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--brand-success)] text-[var(--text-muted)] hover:text-white rounded-xl transition-all shadow-sm group/btn"
+                                    title="Download iCal (.ics)"
+                                >
+                                    <Calendar size={16} className="group-hover/btn:scale-110 transition-transform" />
                                 </button>
                                 <a
                                     href={c.url}
                                     target="_blank"
-                                    className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--brand-primary)] text-[var(--text-muted)] hover:text-white rounded-xl transition-all shadow-sm"
+                                    className="p-3 bg-[var(--bg-muted)] hover:bg-[var(--brand-primary)] text-[var(--text-muted)] hover:text-white rounded-xl transition-all shadow-sm group/btn"
                                 >
-                                    <ChevronRight size={18} />
+                                    <ChevronRight size={18} className="group-hover/btn:translate-x-0.5 transition-transform" />
                                 </a>
                             </div>
                         </motion.div>

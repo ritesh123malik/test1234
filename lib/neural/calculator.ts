@@ -23,13 +23,35 @@ export function calculateNeuralPower(stats: NeuralStats): number {
     score += contests * 20;
   }
 
-  // 3. GitHub Weights (Max ~3000)
-  if (stats.github) {
-    const { stars, followers, publicRepos } = stats.github;
-    score += stars * 50;
-    score += followers * 10;
-    score += publicRepos * 5;
-  }
+    // 3. GitHub Weights (Max ~3000)
+    if (stats.github) {
+        const { stars, followers, publicRepos } = stats.github;
+        score += stars * 50;
+        score += followers * 10;
+        score += publicRepos * 5;
+    }
 
-  return Math.round(score);
+    // 4. GeeksforGeeks Weights
+    if (stats.gfg) {
+        const { easy, medium, hard, ranking } = stats.gfg;
+        score += easy * 1;
+        score += medium * 3;
+        score += hard * 7;
+        if (ranking > 0 && ranking < 10000) score += (10000 - ranking) / 10;
+    }
+
+    // 5. CodeChef Weights
+    if (stats.codechef) {
+        const { rating, totalSolved } = stats.codechef;
+        score += rating * 1.0;
+        score += totalSolved * 2;
+    }
+
+    // 6. HackerRank Weights
+    if (stats.hackerrank) {
+        const { totalSolved } = stats.hackerrank;
+        score += totalSolved * 5;
+    }
+
+    return Math.round(score);
 }
