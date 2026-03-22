@@ -36,8 +36,35 @@ export default async function DashboardPage() {
     supabase.from('problem_notes').select('id', { count: 'exact' }).eq('user_id', user.id).lte('next_revision_at', new Date().toISOString()),
   ]);
 
-  const profile = profileRes.data;
-  const subscription = subRes.data;
+  let profile = profileRes.data;
+  let subscription = subRes.data;
+
+  // FAIL-SAFE: If profile is missing, create it using Admin Client (self-healing)
+  if (!profile && user) {
+    console.warn(`Dashboard: Profile missing for user ${user.id}, attempting self-healing creation...`);
+    const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+    const admin = getSupabaseAdmin();
+    
+    if (admin) {
+        const { data: newProfile } = await admin
+            .from('profiles')
+            .upsert({
+                id: user.id,
+                email: user.email!,
+                full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                username: user.user_metadata?.username || user.email?.split('@')[0],
+                is_premium: false
+            })
+            .select()
+            .maybeSingle();
+        
+        if (newProfile) {
+            profile = newProfile;
+            // Also ensure initial subscription
+            await admin.from('subscriptions').upsert({ user_id: user.id, plan: 'free', status: 'active' });
+        }
+    }
+  }
   const progress = progressRes.data || [];
   const bookmarkCount = bookmarksRes.count || 0;
   const latestResume = resumeRes.data?.[0];

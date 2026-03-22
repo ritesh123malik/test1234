@@ -20,6 +20,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // FAIL-SAFE: Self-healing profile creation (matches Fix 1 from user suggestion)
+    const { data: profile } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
+    if (!profile) {
+        console.warn(`API AI: Profile missing for user ${user.id}, creating on the fly...`);
+        const { getSupabaseAdmin } = await import('@/lib/supabase/admin');
+        const admin = getSupabaseAdmin();
+        if (admin) {
+            await admin.from('profiles').upsert({
+                id: user.id,
+                email: user.email!,
+                full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                username: user.user_metadata?.username || user.email?.split('@')[0],
+                is_premium: false
+            });
+            await admin.from('subscriptions').upsert({ user_id: user.id, plan: 'free', status: 'active' });
+        }
+    }
+
     try {
         const body = await req.json();
         const { action, problem, difficulty, count, topic, code, language, subtopics, systemPrompt: bodySystemPrompt } = body;
