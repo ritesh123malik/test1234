@@ -71,3 +71,31 @@ export async function submitOAAttempt(attemptId: string, options: {
 
     return attempt;
 }
+
+export async function getOAAttempt(attemptId: string) {
+    const supabase = await createClient();
+
+    // 1. Fetch Attempt
+    const { data: attempt, error: aError } = await supabase
+        .from('oa_attempts')
+        .select('*, oa_templates(*)')
+        .eq('id', attemptId)
+        .single();
+
+    if (aError || !attempt) throw new Error('OA Attempt not found');
+
+    const template = attempt.oa_templates;
+
+    // 2. Fetch Questions (Aptitude + Coding)
+    const { data: aptitudeQuestions } = await supabaseAdmin
+        .from('aptitude_questions')
+        .select('*')
+        .in('id', template.question_ids);
+
+    const { data: codingQuestions } = await supabaseAdmin
+        .from('coding_questions')
+        .select('*')
+        .in('id', template.coding_question_ids);
+
+    return { attempt, template, aptitudeQuestions, codingQuestions };
+}

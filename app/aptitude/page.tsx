@@ -91,7 +91,7 @@ export default function AptitudeLobby() {
                             Aptitude <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600">Forge.</span>
                         </h1>
                         <p className="text-gray-500 max-w-2xl text-lg font-medium">
-                            The highest fidelity aptitude engine for LNMITians. Crushing TCS NQT, Infosys SP, and Big Tech OAs starts here.
+                            The highest fidelity aptitude engine for LNMIITians. Crushing TCS NQT, Infosys SP, and Big Tech OAs starts here.
                         </p>
                     </div>
 

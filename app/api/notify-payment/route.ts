@@ -1,6 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const { txnId, userId, amount, paymentRequestId } = await req.json();
 
@@ -33,8 +41,11 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Core Webhook Notification failure vector:', error);
-        return NextResponse.json({ success: false, error: 'Telegram operations pipeline failed to clear network socket' });
+        return NextResponse.json(
+            { error: 'Telegram operations pipeline failed to clear network socket' },
+            { status: 500 }
+        );
     }
 }

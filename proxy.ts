@@ -25,19 +25,21 @@ export default async function proxy(request: NextRequest) {
                 getAll() {
                     return request.cookies.getAll();
                 },
-                setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    });
+                setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+                    cookiesToSet.forEach(({ name, value }) =>
+                        request.cookies.set(name, value)
+                    )
+                    supabaseResponse = NextResponse.next({ request })
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
-                    );
+                    )
                 },
             },
         }
     );
 
+    // IMPORTANT: DO NOT REMOVE getUser()
+    // It is required to refresh the session and prevent 401s on the server side
     const { data: { user } } = await supabase.auth.getUser();
 
     // Rate limiting for AI endpoints

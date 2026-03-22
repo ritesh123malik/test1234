@@ -1,6 +1,6 @@
 'use client';
-
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Target } from 'lucide-react';
 
 interface CGPAChipProps {
@@ -8,6 +8,7 @@ interface CGPAChipProps {
 }
 
 export function CGPAChip({ cgpa }: CGPAChipProps) {
+    const router = useRouter();
     const getStatusColor = () => {
         if (cgpa >= 8.5) return 'text-brand-success bg-brand-success/10 border-brand-success/20';
         if (cgpa >= 7.5) return 'text-brand-warning bg-brand-warning/10 border-brand-warning/20';
@@ -21,7 +22,10 @@ export function CGPAChip({ cgpa }: CGPAChipProps) {
     };
 
     return (
-        <button className="group relative flex items-center gap-2 pl-3 pr-2 py-1 rounded-full border border-border-subtle hover:bg-bg-overlay/50 transition-all">
+        <button
+            onClick={() => router.push('/cgpa-calculator')}
+            className="group relative flex items-center gap-2 pl-3 pr-2 py-1 rounded-full border border-border-subtle hover:bg-bg-overlay/50 transition-all cursor-pointer"
+        >
             <span className="text-[10px] font-black text-text-muted tracking-widest">CGPA</span>
             <div className={`px-2 py-0.5 rounded-lg border font-mono font-bold text-xs ${getStatusColor()}`}>
                 {cgpa.toFixed(2)}
@@ -32,9 +36,10 @@ export function CGPAChip({ cgpa }: CGPAChipProps) {
                 <div className="flex flex-col items-center gap-1">
                     <Target size={14} className="text-text-muted mb-1" />
                     <p className="text-[10px] font-black text-text-primary tracking-widest">{getLabel()}</p>
-                    <p className="text-[8px] text-text-muted uppercase font-bold">Click to update</p>
+                    <p className="text-[8px] text-text-muted uppercase font-bold">Click to improve</p>
                 </div>
             </div>
         </button>
     );
 }
+

@@ -27,6 +27,8 @@ interface Props {
     challenge: Challenge;
     submission: { status: string; xp_earned: number } | null;
     profile: { xp: number; level: number; current_streak: number };
+    currentLevel: any;
+    onDifficultyChange: (value: any) => void;
     onSubmit: (status: 'solved' | 'attempted' | 'skipped', platform: 'leetcode' | 'codeforces') => Promise<void>;
 }
 
@@ -61,7 +63,7 @@ const getDifficultyColor = (q: QuestionDetails) => {
     return colors[q.difficulty as keyof typeof colors] || 'text-gray-400 bg-gray-400/10';
 };
 
-export default function DailyChallengeCard({ challenge, submission, profile, onSubmit }: Props) {
+export default function DailyChallengeCard({ challenge, submission, profile, currentLevel, onDifficultyChange, onSubmit }: Props) {
     const [loading, setLoading] = useState(false);
     const [timeLeft, setTimeLeft] = useState('');
 
@@ -89,11 +91,33 @@ export default function DailyChallengeCard({ challenge, submission, profile, onS
     const isSolved = submission?.status === 'solved';
 
     return (
-        <div className={`relative bg-gray-900/50 backdrop-blur-sm rounded-3xl border ${config.border} p-6 space-y-5 transition-all hover:scale-[1.01] group flex flex-col justify-between`}>
+        <div className={`relative bg-gray-900/50 backdrop-blur-sm rounded-3xl border ${config.border} p-4 md:p-6 space-y-4 md:space-y-6 transition-all hover:scale-[1.01] group flex flex-col justify-between`}>
+
             {/* Header: Platform & Time */}
             <div className='flex items-center justify-between'>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${config.bg} ${config.color} border border-current/10`}>
-                    <span className='font-black text-[10px] tracking-widest uppercase'>{config.badge_text}</span>
+                <div className='flex items-center gap-3'>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${config.bg} ${config.color} border border-current/10`}>
+                        <span className='font-black text-[10px] tracking-widest uppercase'>{config.badge_text}</span>
+                    </div>
+
+                    {/* Level Selector */}
+                    <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/5">
+                        {[1, 2, 3].map((lvl) => (
+                            <button
+                                key={lvl}
+                                onClick={() => onDifficultyChange(platform === 'leetcode' ? (lvl === 1 ? 'Easy' : lvl === 2 ? 'Medium' : 'Hard') : lvl)}
+                                className={`px-2 py-0.5 rounded-md text-[9px] font-black transition-all ${
+                                    (platform === 'leetcode' 
+                                        ? (currentLevel === (lvl === 1 ? 'Easy' : lvl === 2 ? 'Medium' : 'Hard'))
+                                        : currentLevel === lvl)
+                                    ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                            >
+                                L{lvl}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className='flex items-center gap-2 text-gray-400 text-[10px] font-bold uppercase tracking-wider'>
                     <span className='w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse' />
@@ -139,7 +163,7 @@ export default function DailyChallengeCard({ challenge, submission, profile, onS
                         <a href={q.url} target='_blank' rel='noopener noreferrer'
                             className={`block w-full py-3.5 ${platform === 'leetcode' ? 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'} 
                             border border-current/20 font-black rounded-2xl text-center text-xs uppercase tracking-[0.2em] transition-all`}>
-                            Engage on {config.badge_text} →
+                            Solve on {config.badge_text} →
                         </a>
                         <div className='grid grid-cols-2 gap-3'>
                             <button

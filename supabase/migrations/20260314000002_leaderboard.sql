@@ -91,7 +91,7 @@ SELECT
   NOW() AS last_refreshed
 FROM profiles p
 LEFT JOIN interviewer_sessions s ON s.user_id = p.id AND s.status = 'completed'
-WHERE p.xp > 0
+WHERE p.xp >= 0 AND (p.username IS NOT NULL OR p.full_name IS NOT NULL)
 GROUP BY p.id, p.username, p.full_name, p.avatar_url, p.college, p.city, p.xp, p.level, p.current_streak;
 
 CREATE UNIQUE INDEX IF NOT EXISTS mv_lb_global_user ON mv_leaderboard_global(user_id);
@@ -117,7 +117,7 @@ LEFT JOIN xp_transactions xt ON xt.user_id = p.id
   AND xt.created_at >= NOW() - INTERVAL '7 days'
   AND xt.amount > 0
 GROUP BY p.id, p.username, p.full_name, p.avatar_url, p.college, p.city, p.level, p.current_streak
-HAVING COALESCE(SUM(xt.amount), 0) > 0;
+HAVING COALESCE(SUM(xt.amount), 0) >= 0;
 
 CREATE UNIQUE INDEX IF NOT EXISTS mv_lb_weekly_user ON mv_leaderboard_weekly(user_id);
 CREATE INDEX IF NOT EXISTS mv_lb_weekly_rank ON mv_leaderboard_weekly(weekly_rank);

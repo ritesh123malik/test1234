@@ -30,26 +30,51 @@ async function seedMaster() {
     }
     console.log('✅ Companies seeded.');
 
-    // 2. Seed Daily Challenge for TODAY
+    // 2. Seed Daily Challenges for TODAY (LeetCode + Codeforces)
     const today = new Date().toISOString().split('T')[0];
 
-    // First, push a question to the pool
-    const { data: poolQ } = await supabase.from('daily_challenge_pool').upsert({
+    // LeetCode Challenge
+    const { data: lcPool } = await supabase.from('daily_challenge_pool').upsert({
         title: 'Merge Intervals',
         slug: 'merge-intervals',
         difficulty: 'Medium',
         topic_tags: ['Arrays', 'Sorting'],
         url: 'https://leetcode.com/problems/merge-intervals/',
-        xp_reward: 50
+        xp_reward: 50,
+        platform: 'leetcode'
     }, { onConflict: 'slug' }).select().single();
 
-    if (poolQ) {
+    if (lcPool) {
         await supabase.from('daily_challenges').upsert({
             challenge_date: today,
-            question_id: poolQ.id,
-            bonus_xp: 20
-        }, { onConflict: 'challenge_date' });
-        console.log(`✅ Daily Challenge for ${today} seeded.`);
+            question_id: lcPool.id,
+            bonus_xp: 20,
+            platform: 'leetcode'
+        }, { onConflict: 'challenge_date,platform' });
+        console.log(`✅ LeetCode Challenge for ${today} seeded.`);
+    }
+
+    // Codeforces Challenge
+    const { data: cfPool } = await supabase.from('daily_challenge_pool').upsert({
+        title: 'Theatre Square',
+        slug: 'theatre-square',
+        difficulty: 'Easy',
+        topic_tags: ['Math'],
+        url: 'https://codeforces.com/problemset/problem/1/A',
+        xp_reward: 20,
+        platform: 'codeforces',
+        external_id: '1A',
+        rating: 1000
+    }, { onConflict: 'slug' }).select().single();
+
+    if (cfPool) {
+        await supabase.from('daily_challenges').upsert({
+            challenge_date: today,
+            question_id: cfPool.id,
+            bonus_xp: 10,
+            platform: 'codeforces'
+        }, { onConflict: 'challenge_date,platform' });
+        console.log(`✅ Codeforces Challenge for ${today} seeded.`);
     }
 
     // 3. Seed "Top 100" Sheets for Google & Meta

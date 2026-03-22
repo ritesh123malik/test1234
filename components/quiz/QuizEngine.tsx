@@ -16,14 +16,18 @@ interface QuizQuestion {
     time_limit_seconds: number;
 }
 
+import MockTacticalReport from '@/components/test/MockTacticalReport';
+
 interface QuizEngineProps {
     categoryId: string;
     subject: string;
     userId: string;
+    isTimed?: boolean;
+    totalTimeSeconds?: number;
     onComplete?: (score: number, total: number) => void;
 }
 
-export default function QuizEngine({ categoryId, subject, userId, onComplete }: QuizEngineProps) {
+export default function QuizEngine({ categoryId, subject, userId, isTimed = false, totalTimeSeconds = 0, onComplete }: QuizEngineProps) {
     const [questions, setQuestions] = useState<QuizQuestion[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
@@ -32,6 +36,7 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
     const [loading, setLoading] = useState(true);
     const [score, setScore] = useState(0);
     const [showExplanation, setShowExplanation] = useState(false);
+    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         loadQuestions();
@@ -147,6 +152,30 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
         return <div className="text-center py-12">Loading questions...</div>;
     }
 
+    if (quizCompleted && showReport) {
+        // Derive some simple areas for the mock report
+        const scoreByDiff: any = {};
+        questions.forEach((q, i) => {
+            if (!scoreByDiff[q.difficulty]) scoreByDiff[q.difficulty] = { correct: 0, total: 0 };
+            scoreByDiff[q.difficulty].total++;
+            if (selectedAnswers[i] === q.correct_option) scoreByDiff[q.difficulty].correct++;
+        });
+
+        const weakAreas = Object.keys(scoreByDiff).filter(d => scoreByDiff[d].correct / scoreByDiff[d].total < 0.6);
+        const strongAreas = Object.keys(scoreByDiff).filter(d => scoreByDiff[d].correct / scoreByDiff[d].total >= 0.6);
+
+        return (
+            <MockTacticalReport 
+                score={score}
+                total={questions.length}
+                timeSeconds={totalTimeSeconds}
+                weakAreas={weakAreas.length > 0 ? weakAreas : ['Foundation Concepts']}
+                strongAreas={strongAreas.length > 0 ? strongAreas : ['General Logic']}
+                onClose={() => onComplete?.(score, questions.length)}
+            />
+        );
+    }
+
     if (quizCompleted) {
         const percentage = Math.round((score / questions.length) * 100);
 
@@ -161,7 +190,7 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
                     You scored {score} out of {questions.length}
                 </p>
 
-                <div className="max-w-md mx-auto">
+                <div className="max-w-md mx-auto mb-8">
                     <div className="bg-[var(--bg-base)] rounded-full h-4 mb-4 overflow-hidden border border-[var(--border-subtle)]">
                         <div
                             className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] h-4 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(79,70,229,0.5)]"
@@ -174,6 +203,13 @@ export default function QuizEngine({ categoryId, subject, userId, onComplete }: 
                                 'Room for growth. Every attempt is a step forward!'}
                     </p>
                 </div>
+
+                <button 
+                    onClick={() => setShowReport(true)}
+                    className="btn-primary w-full py-4 text-[10px] font-black uppercase tracking-widest"
+                >
+                    Generate Tactical Report
+                </button>
             </div>
         );
     }

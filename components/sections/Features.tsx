@@ -8,7 +8,7 @@ import { Sparkles, Calculator, Flame, Building2, MessagesSquare, Trophy, ArrowUp
 const FEATURES = [
     {
         title: 'AI-Powered Insights',
-        desc: 'Personalized placement roadmaps and interview predictions based on your skill profile and LNMIT target data.',
+        desc: 'Personalized placement roadmaps and interview predictions based on your skill profile and LNMIIT target data.',
         icon: <Sparkles className="text-brand-primary" size={32} />,
         href: '/roadmap',
         span: 'col-span-full md:col-span-2 row-span-1',
@@ -41,7 +41,7 @@ const FEATURES = [
     },
     {
         title: 'Company Intelligence',
-        desc: 'Deep dives into 150+ companies that visit LNMIT. Test formats, interview rounds, and real student experiences.',
+        desc: 'Deep dives into 150+ companies that visit LNMIIT. Test formats, interview rounds, and real student experiences.',
         icon: <Building2 className="text-brand-tertiary" size={24} />,
         href: '/companies',
         span: 'col-span-full',
@@ -50,14 +50,23 @@ const FEATURES = [
     {
         title: 'Interview Reviews',
         desc: 'Unfiltered experiences from seniors who joined top firms.',
-        icon: <MessagesSquare className="text-text-accent" size={24} />,
-        href: '/review',
+        icon: <MessagesSquare className="text-brand-primary" size={24} />,
+        href: '/experiences',
         span: 'col-span-1',
         color: 'brand-primary'
     },
     {
+        title: 'Question Sheets',
+        desc: 'Curated SDE sheets for targeted platform mastery.',
+        icon: <Building2 className="text-brand-tertiary" size={24} />,
+        href: '/sheets',
+        span: 'col-span-1',
+        color: 'brand-tertiary',
+        badge: 'NEW'
+    },
+    {
         title: 'Leaderboard',
-        desc: 'See where you stand among your peers in LNMIT.',
+        desc: 'See where you stand among your peers in LNMIIT.',
         icon: <Trophy className="text-brand-warning" size={24} />,
         href: '/leaderboard',
         span: 'col-span-1',
@@ -81,11 +90,11 @@ export function Features() {
                     Everything You Need, <span className="text-text-muted">In One Place</span>
                 </h2>
                 <p className="text-text-secondary max-w-2xl mx-auto font-medium">
-                    Integrated technical and academic tools designed to handle every aspect of your placement journey at LNMIT.
+                    Integrated technical and academic tools designed to handle every aspect of your placement journey at LNMIIT.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[200px]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:auto-rows-[200px]">
                 {FEATURES.map((feature, i) => (
                     <motion.div
                         key={feature.title}

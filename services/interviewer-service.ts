@@ -1,8 +1,6 @@
-import Groq from 'groq-sdk';
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin';
 import { analyzeSpeech, SpeechMetrics } from './speech-analyzer';
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { generateWithGroq, MODELS, getGroqClient } from '@/lib/ai-service';
 
 // ── OPENING QUESTIONS MAP ────────────────────────────────────
 const OPENING_QUESTIONS: Record<string, string> = {
@@ -47,7 +45,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
     const file = new File([audioBlob], 'audio.m4a', { type: 'audio/m4a' });
 
     try {
-        const transcription = await groq.audio.transcriptions.create({
+        const transcription = await getGroqClient().audio.transcriptions.create({
             file,
             model: 'whisper-large-v3-turbo',
             response_format: 'text',
@@ -60,6 +58,71 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
 }
 
 // ── 3. EVALUATE RESPONSE ─────────────────────────────────────
+export async function evaluateResponseStream(
+    sessionId: string,
+    questionText: string,
+    answerText: string,
+    interviewType: string,
+    codeSnippet?: string,
+    codeLanguage?: string,
+    audioDurationSeconds?: number
+) {
+    let speechMetrics: SpeechMetrics | null = null;
+    if (answerText && audioDurationSeconds && audioDurationSeconds > 0) {
+        speechMetrics = analyzeSpeech(answerText, audioDurationSeconds);
+    }
+
+    const prompt = buildEvaluationPrompt(interviewType, questionText, answerText, codeSnippet, codeLanguage);
+    const systemPrompt = 'You are a Senior Technical Interviewer and a JSON-only API. Return ONLY valid JSON.';
+
+    // Create the stream
+    const groqStream = await getGroqClient().chat.completions.create({
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+        ],
+        model: MODELS.LLAMA_3_3_70B,
+        temperature: 0.3,
+        stream: true,
+        response_format: { type: 'json_object' }
+    });
+
+    return new ReadableStream({
+        async start(controller) {
+            let fullContent = '';
+            const encoder = new TextEncoder();
+
+            try {
+                for await (const chunk of groqStream) {
+                    const content = chunk.choices[0]?.delta?.content || '';
+                    fullContent += content;
+                    
+                    // We send the raw content as it comes, the frontend will need to parse/handle it
+                    // Or we can try to extract the follow_up_question property if it's surfaced
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chunk: content })}\n\n`));
+                }
+
+                // Final parsing to persist and send the full evaluation
+                let evaluation;
+                try {
+                    const cleanContent = fullContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    evaluation = JSON.parse(cleanContent);
+                    await persistResponse(sessionId, questionText, answerText, evaluation, codeSnippet, speechMetrics, audioDurationSeconds);
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, evaluation: { ...evaluation, speechMetrics } })}\n\n`));
+                } catch (e) {
+                    console.error('Final parse error:', e);
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Parse failed' })}\n\n`));
+                }
+                
+                controller.close();
+            } catch (err) {
+                console.error('Stream error:', err);
+                controller.error(err);
+            }
+        }
+    });
+}
+
 export async function evaluateResponse(
     sessionId: string,
     questionText: string,
@@ -77,19 +140,18 @@ export async function evaluateResponse(
     const prompt = buildEvaluationPrompt(interviewType, questionText, answerText, codeSnippet, codeLanguage);
 
     try {
-        const completion = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.3,
-            response_format: { type: 'json_object' },
-            messages: [
-                { role: 'system', content: 'You are a Senior Technical Interviewer and a JSON-only API. Return ONLY valid JSON.' },
-                { role: 'user', content: prompt }
-            ]
-        });
+        const content = await generateWithGroq(
+            prompt,
+            'You are a Senior Technical Interviewer and a JSON-only API. Return ONLY valid JSON.',
+            MODELS.LLAMA_3_3_70B,
+            {
+                temperature: 0.3,
+                response_format: { type: 'json_object' }
+            }
+        );
 
         let evaluation;
         try {
-            const content = completion.choices[0].message.content!;
             // Clean common AI markdown bloat
             const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             evaluation = JSON.parse(cleanContent);
@@ -191,7 +253,7 @@ export async function endSession(sessionId: string) {
     }
 
     // Calculate overall average
-    const totalScores = responses.reduce((acc, r) => {
+    const totalScores = responses.reduce((acc: number, r: any) => {
         return acc + (r.score_correctness + r.score_depth + r.score_clarity + r.score_structure + r.score_confidence) / 5;
     }, 0);
     const overallScore = totalScores / responses.length;

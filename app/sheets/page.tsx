@@ -5,7 +5,18 @@ import SheetHeader from '@/components/sheets/SheetHeader';
 
 export default async function SheetsPage() {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+
+    let user = null;
+    try {
+        const authPromise = supabase.auth.getUser();
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        );
+        const { data } = await Promise.race([authPromise, timeoutPromise]) as any;
+        user = data?.user ?? null;
+    } catch (e) {
+        console.warn('SheetsPage: Auth check timed out');
+    }
     if (!user) redirect('/auth/login?redirect=/sheets');
 
     // Fetch User Subscription for premium status

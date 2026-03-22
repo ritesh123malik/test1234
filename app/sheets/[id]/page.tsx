@@ -10,7 +10,18 @@ import QuestionList from '@/components/sheets/QuestionList';
 export default async function SheetDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+
+    let user = null;
+    try {
+        const authPromise = supabase.auth.getUser();
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        );
+        const { data } = await Promise.race([authPromise, timeoutPromise]) as any;
+        user = data?.user ?? null;
+    } catch (e) {
+        console.warn('SheetDetailPage: Auth check timed out');
+    }
     if (!user) redirect('/auth/login?redirect=/sheets/' + id);
 
     // 1. Fetch Sheet Metadata

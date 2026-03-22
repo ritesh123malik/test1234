@@ -11,6 +11,7 @@ import {
     ClockIcon,
     UserGroupIcon
 } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
 
 export default function SystemDesignPage() {
     const [designs, setDesigns] = useState<any[]>([]);
@@ -83,96 +84,107 @@ export default function SystemDesignPage() {
     }
 
     return (
-        <div className="min-h-screen bg-bg py-8">
-            <div className="max-w-7xl mx-auto px-4">
+        <div className="min-h-screen bg-bg-base py-12">
+            <div className="max-w-7xl mx-auto px-6">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">System Design Practice</h1>
-                        <p className="text-gray-600 mt-1">Design scalable systems and get AI-powered feedback</p>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="bg-brand-primary/10 text-brand-primary text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1 rounded-full border border-brand-primary/20">Arch_v1.0</span>
+                            <div className="h-px w-10 bg-border-subtle" />
+                            <span className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em]">Sector: System_Design</span>
+                        </div>
+                        <h1 className="text-5xl font-black text-white uppercase tracking-tighter leading-none mb-4">System Architecture</h1>
+                        <p className="max-w-xl text-text-secondary text-lg font-medium leading-relaxed">
+                            Draft high-fidelity architectural blueprints. Leverage AI telemetry to identify bottlenecks and optimize for global scale.
+                        </p>
                     </div>
                     <button
                         onClick={createNewDesign}
-                        className="btn-primary rounded-xl flex items-center"
+                        className="btn-primary rounded-2xl flex items-center gap-2 px-8 py-4 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-primary/20"
                     >
-                        <PlusIcon className="w-5 h-5 mr-2" />
-                        New Design
+                        <PlusIcon className="w-4 h-4" />
+                        New Blueprint
                     </button>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-4 gap-4 mb-8">
-                    <div className="card p-6">
-                        <DocumentDuplicateIcon className="w-8 h-8 text-indigo-600 mb-2" />
-                        <div className="text-2xl font-bold">{designs.length}</div>
-                        <div className="text-sm text-gray-600">Total Designs</div>
-                    </div>
-                    <div className="card p-6">
-                        <ChartBarIcon className="w-8 h-8 text-green-600 mb-2" />
-                        <div className="text-2xl font-bold">
-                            {designs.filter(d => d.ai_feedback).length}
+                {/* Stats HUD */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                    {[
+                        { label: 'Blueprints_Logged', value: designs.length, icon: DocumentDuplicateIcon, color: 'var(--brand-primary)' },
+                        { label: 'AI_Synthesized', value: designs.filter(d => d.ai_feedback).length, icon: ChartBarIcon, color: 'var(--brand-success)' },
+                        { label: 'Collab_Nodes', value: 12, icon: UserGroupIcon, color: 'var(--brand-secondary)' },
+                        { label: 'Research_Time', value: '3.5h', icon: ClockIcon, color: 'var(--brand-tertiary)' }
+                    ].map((stat, i) => (
+                        <div key={i} className="glass-card p-8 rounded-[2.5rem] border border-border-subtle relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-[40px] rounded-full group-hover:bg-white/10 transition-all" />
+                            <stat.icon className="w-6 h-6 mb-4 opacity-50" style={{ color: stat.color }} />
+                            <div>
+                                <div className="text-3xl font-black text-white mb-1 tracking-tighter">{stat.value}</div>
+                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-text-muted">{stat.label}</div>
+                            </div>
                         </div>
-                        <div className="text-sm text-gray-600">AI Reviews</div>
-                    </div>
-                    <div className="card p-6">
-                        <UserGroupIcon className="w-8 h-8 text-blue-600 mb-2" />
-                        <div className="text-2xl font-bold">12</div>
-                        <div className="text-sm text-gray-600">Peer Reviews</div>
-                    </div>
-                    <div className="card p-6">
-                        <ClockIcon className="w-8 h-8 text-orange-600 mb-2" />
-                        <div className="text-2xl font-bold">3.5h</div>
-                        <div className="text-sm text-gray-600">Practice Time</div>
-                    </div>
+                    ))}
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8">
-                    {/* My Designs */}
-                    <div className="lg:col-span-2">
-                        <h2 className="text-xl font-bold mb-4">My Designs</h2>
-                        <div className="space-y-3">
+                    {/* My Designs Area */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-primary shadow-[0_0_8px_rgba(var(--brand-primary-rgb),0.5)]" />
+                            Personal_Archives
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {designs.map((design) => (
-                                <div
+                                <motion.div
+                                    whileHover={{ y: -5 }}
                                     key={design.id}
                                     onClick={() => setSelectedDesign(design.id)}
-                                    className="card card-hover p-4 cursor-pointer"
+                                    className="glass-card p-6 cursor-pointer border border-border-subtle hover:border-brand-primary/40 rounded-3xl group"
                                 >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-semibold text-lg">{design.title}</h3>
+                                    <div className="flex items-start justify-between mb-4">
+                                        <h3 className="font-black text-white uppercase tracking-tight text-lg group-hover:text-brand-primary transition-colors">{design.title}</h3>
                                         {design.ai_feedback && (
-                                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
-                                                AI Reviewed
+                                            <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-md text-[8px] font-black uppercase tracking-widest">
+                                                AI_SYNTH
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-3">{design.problem_statement}</p>
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
-                                        <span>Created: {new Date(design.created_at).toLocaleDateString()}</span>
-                                        {design.is_public && <span>🌍 Public</span>}
+                                    <p className="text-xs text-text-secondary mb-6 line-clamp-2 h-8 leading-relaxed">{design.problem_statement || 'No problem statement defined yet.'}</p>
+                                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em] text-text-muted">
+                                        <span>INIT: {new Date(design.created_at).toLocaleDateString()}</span>
+                                        {design.is_public && <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-brand-success" /> GLOBAL</span>}
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Practice Problems */}
-                    <div>
-                        <h2 className="text-xl font-bold mb-4">Practice Problems</h2>
-                        <div className="card p-4">
-                            <div className="space-y-3">
+                    {/* Operational Protocols (Practice Problems) */}
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary shadow-[0_0_8px_rgba(var(--brand-secondary-rgb),0.5)]" />
+                            Design_Protocols
+                        </h2>
+                        <div className="glass-card p-8 rounded-[2.5rem] border border-border-subtle">
+                            <div className="space-y-4">
                                 {problems.map((problem, idx) => (
                                     <div
                                         key={idx}
-                                        className="p-3 border border-border rounded-lg hover:bg-surface-dark cursor-pointer transition-colors"
+                                        className="p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-brand-secondary/30 transition-all cursor-pointer group"
                                     >
-                                        <h3 className="font-medium mb-1">{problem.title}</h3>
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className={`px-2 py-1 rounded-full ${problem.difficulty === 'Hard' ? 'bg-red-100 text-red-700' :
-                                                'bg-yellow-100 text-yellow-700'
-                                                }`}>
+                                        <h3 className="font-bold text-white mb-2 group-hover:text-brand-secondary transition-colors text-sm uppercase tracking-tight">{problem.title}</h3>
+                                        <div className="flex items-center justify-between">
+                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                                                problem.difficulty === 'Hard' 
+                                                ? 'bg-brand-danger/10 text-brand-danger border-brand-danger/20' 
+                                                : 'bg-brand-warning/10 text-brand-warning border-brand-warning/20'
+                                            }`}>
                                                 {problem.difficulty}
                                             </span>
-                                            <span className="text-gray-500">{problem.time}</span>
+                                            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                                                <ClockIcon className="w-3 h-3" /> {problem.time}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}

@@ -15,9 +15,10 @@ import {
 
 interface Contest {
     id: string;
-    title: string;
+    name: string;
     platform: string;
-    start_time: string;
+    startTime: string;
+    duration: number;
     url: string;
 }
 
@@ -31,7 +32,8 @@ export default function ContestCalendar() {
             try {
                 const res = await fetch('/api/contests');
                 const data = await res.json();
-                setContests(data.contests || []);
+                // API returns array directly now
+                setContests(Array.isArray(data) ? data : []);
             } catch (err) {
                 setError('Failed to load contest schedule');
             } finally {
@@ -42,9 +44,9 @@ export default function ContestCalendar() {
     }, []);
 
     const addToGoogleCalendar = (contest: Contest) => {
-        const start = new Date(contest.start_time).toISOString().replace(/-|:|\.\d\d\d/g, '');
-        const end = new Date(new Date(contest.start_time).getTime() + 7200000).toISOString().replace(/-|:|\.\d\d\d/g, '');
-        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(contest.title)}&dates=${start}/${end}&details=${encodeURIComponent('Sync via placement-intel Dashboard')}&location=${encodeURIComponent(contest.url)}`;
+        const start = new Date(contest.startTime).toISOString().replace(/-|:|\.\d\d\d/g, '');
+        const end = new Date(new Date(contest.startTime).getTime() + (contest.duration * 1000)).toISOString().replace(/-|:|\.\d\d\d/g, '');
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(contest.name)}&dates=${start}/${end}&details=${encodeURIComponent('Sync via placement-intel Dashboard')}&location=${encodeURIComponent(contest.url)}`;
         window.open(url, '_blank');
     };
 
@@ -100,10 +102,10 @@ export default function ContestCalendar() {
                                     {c.platform.slice(0, 4)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-[15px] font-black text-[var(--text-primary)] line-clamp-1 group-hover:text-[var(--brand-primary)] transition-colors uppercase tracking-tight">{c.title}</h4>
+                                    <h4 className="text-[15px] font-black text-[var(--text-primary)] line-clamp-1 group-hover:text-[var(--brand-primary)] transition-colors uppercase tracking-tight">{c.name}</h4>
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-[11px] text-[var(--text-secondary)] font-mono mt-1.5 opacity-80">
-                                        <span className="flex items-center gap-2"><Calendar size={13} className="text-[var(--brand-primary)]" /> {new Date(c.start_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                                        <span className="flex items-center gap-2 uppercase font-black"><Timer size={13} className="text-[var(--brand-primary)]" /> {new Date(c.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="flex items-center gap-2"><Calendar size={13} className="text-[var(--brand-primary)]" /> {new Date(c.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                        <span className="flex items-center gap-2 uppercase font-black"><Timer size={13} className="text-[var(--brand-primary)]" /> {new Date(c.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </div>
                             </div>

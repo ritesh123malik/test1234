@@ -67,8 +67,9 @@ export default function UpgradeModal({ isOpen, onClose, featureName }: UpgradeMo
 
                             <div className="space-y-4 mb-10 text-left">
                                 {[
-                                    { icon: Zap, text: "Unlimited AI Interviews & ATS Scans" },
-                                    { icon: ShieldCheck, text: "Full OA Simulator for all companies" },
+                                    { icon: Zap, text: "Unlimited AI Interviews & Voice Simulation" },
+                                    { icon: ShieldCheck, text: "Full OA Simulator & Anti-Proctor Intel" },
+                                    { icon: Rocket, text: "SDE Sheet Progress Sync & Advanced Heatmaps" },
                                     { icon: Check, text: "AI Pattern Identifier & Audio Hints" }
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5">

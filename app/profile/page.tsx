@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LeetCodeConnect from '@/components/leetcode/LeetCodeConnect';
 import CodeforcesConnect from '@/components/codeforces/CodeforcesConnect';
@@ -30,10 +31,19 @@ import {
   LayoutDashboard,
   Trophy,
   Settings,
-  MessageSquare
+  MessageSquare,
+  Copy,
+  Check,
+  Camera,
+  Share2,
+  Mail,
+  Shield,
+  RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -46,6 +56,10 @@ export default function ProfilePage() {
     target_role: ''
   });
   const [speechSessions, setSpeechSessions] = useState<any[]>([]);
+
+  const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'referrals'>('profile');
 
   useEffect(() => {
     fetchProfile();
@@ -94,7 +108,6 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) return;
 
     const { error } = await supabase
@@ -104,6 +117,8 @@ export default function ProfilePage() {
         college: formData.college,
         graduation_year: parseInt(formData.graduation_year) || null,
         target_role: formData.target_role,
+        email_notifications_enabled: profile.email_notifications_enabled,
+        contest_reminders_enabled: profile.contest_reminders_enabled,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
@@ -111,7 +126,80 @@ export default function ProfilePage() {
     if (!error) {
       setEditing(false);
       fetchProfile();
+      router.refresh(); // Sync Header
+      toast.success('Core Parameters Synchronized');
     }
+  };
+
+  const handleAvatarUpload = async (event: any) => {
+    try {
+      setUploading(true);
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+      toast.success('Identity Visualization Updated');
+    } catch (error: any) {
+      toast.error('Upload Failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const target = e.target as any;
+    const password = target.password.value;
+    const confirm = target.confirm.value;
+
+    if (password !== confirm) {
+      toast.error('Cryptographic Mismatch: Passwords do not match');
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      toast.error('Override Failed: ' + error.message);
+    } else {
+      toast.success('Master Key Rotated Successfully');
+      target.reset();
+    }
+  };
+
+  const generateReferral = async () => {
+    const { error } = await supabase.rpc('generate_referral_code', { user_uuid: profile.id });
+    if (error) {
+      toast.error('Protocol Error: Could not generate code');
+    } else {
+      fetchProfile();
+      toast.success('Network Protocol Established');
+    }
+  };
+
+  const copyRef = () => {
+    navigator.clipboard.writeText(profile?.referral_code || '');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success('Data Copied to Clipboard');
   };
 
   if (loading) {
@@ -134,11 +222,11 @@ export default function ProfilePage() {
           <p className="text-[var(--text-secondary)] text-lg max-w-2xl font-medium">Fine-tune your professional profile and analyze your competitive edge with our AI-driven Skill Gap Radar.</p>
         </header>
 
-        <div className="grid lg:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
           {/* Profile Info Column */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className="lg:col-span-4 space-y-6 md:space-y-8">
             {/* Identity Card */}
-            <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] overflow-hidden shadow-2xl group transition-all duration-500 hover:shadow-indigo-500/10">
+            <div className="glass-card rounded-[2rem] md:rounded-[2.5rem] border border-[var(--border-subtle)] overflow-hidden shadow-2xl group transition-all duration-500 hover:shadow-indigo-500/10">
               <div className="h-32 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
                 <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
@@ -146,15 +234,25 @@ export default function ProfilePage() {
 
               <div className="px-8 pb-10 relative">
                 <div className="relative -mt-16 mb-6">
-                  <div className="w-32 h-32 bg-[var(--bg-card)] rounded-[2rem] border-4 border-[var(--bg-base)] flex items-center justify-center text-5xl font-display font-bold text-[var(--brand-primary)] shadow-2xl group-hover:scale-105 transition-transform duration-500">
-                    {profile?.full_name?.[0] || authEmail?.[0]?.toUpperCase() || 'U'}
+                  <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-input')?.click()}>
+                    <div className="w-32 h-32 bg-[var(--bg-card)] rounded-[2rem] border-4 border-[var(--bg-base)] flex items-center justify-center text-5xl font-display font-bold text-[var(--brand-primary)] shadow-2xl group-hover:scale-105 transition-transform duration-500 overflow-hidden">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        profile?.full_name?.[0] || authEmail?.[0]?.toUpperCase() || 'U'
+                      )}
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploading ? <RefreshCw className="w-8 h-8 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white" />}
+                      </div>
+                    </div>
                   </div>
+                  <input id="avatar-input" type="file" hidden accept="image/*" onChange={handleAvatarUpload} />
                   <div className="absolute bottom-2 right-2 w-8 h-8 bg-emerald-500 border-4 border-[var(--bg-base)] rounded-full shadow-lg" />
                 </div>
 
                 <div className="mb-8">
                   <h2 className="text-2xl font-display font-bold text-[var(--text-primary)] mb-1">{profile?.full_name || 'Anonymous Strategist'}</h2>
-                  <p className="text-[var(--text-muted)] font-mono text-sm tracking-tight">{authEmail}</p>
+                  <p className="text-[var(--text-muted)] font-mono text-[10px] tracking-widest uppercase opacity-60 italic">{profile?.referral_code ? `Node_${profile.referral_code}` : 'Awaiting_Activation'}</p>
                 </div>
 
                 {!editing ? (
@@ -299,27 +397,152 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Arena Identity Card [NEW] */}
-            <CollegeCitySetup
-              currentCollege={profile?.college}
-              currentCity={profile?.city}
-              onSave={async (college, city) => {
-                try {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) return;
-                  const { error } = await supabase
-                    .from('profiles')
-                    .update({ college, city, updated_at: new Date().toISOString() })
-                    .eq('id', user.id);
-                  if (error) throw error;
-                  alert('Arena Identity Synchronized Successfully');
-                  fetchProfile();
-                } catch (err: any) {
-                  console.error('Arena Update Error:', err);
-                  alert(`Failed to update Arena Identity: ${err.message || 'Unknown Error'}`);
-                }
-              }}
-            />
+            {/* Tab Navigation */}
+            <div className="flex bg-[var(--bg-surface)] p-1.5 rounded-2xl border border-[var(--border-subtle)] gap-2 mb-6">
+              {[
+                { id: 'profile', icon: UserIcon, label: 'Identity' },
+                { id: 'security', icon: Shield, label: 'Protocols' },
+                { id: 'referrals', icon: Share2, label: 'Network' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[var(--brand-primary)] text-white shadow-lg shadow-indigo-500/20' : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5'}`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {activeTab === 'profile' && (
+              <div className="space-y-6">
+                <CollegeCitySetup
+                  currentCollege={profile?.college}
+                  currentCity={profile?.city}
+                  currentCgpa={profile?.cgpa}
+                  onSave={async (college, city, cgpa) => {
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ college, city, cgpa, updated_at: new Date().toISOString() })
+                        .eq('id', user.id);
+                      if (error) throw error;
+                      toast.success('Arena Identity Synchronized');
+                      fetchProfile();
+                      router.refresh(); // Sync Header
+                    } catch (err: any) {
+                      toast.error(`Update Failed: ${err.message}`);
+                    }
+                  }}
+                />
+
+                {/* Notification Preferences */}
+                <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-8 shadow-2xl">
+                  <h3 className="text-xl font-display font-bold text-white mb-8 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30 rounded-xl flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-[var(--brand-primary)]" />
+                    </div>
+                    Comms_Protocols
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-[var(--bg-base)]/50 border border-[var(--border-subtle)] rounded-2xl">
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-tight">Email Notifications</p>
+                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1">Direct system alerts</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const val = !profile.email_notifications_enabled;
+                          setProfile({ ...profile, email_notifications_enabled: val });
+                          supabase.from('profiles').update({ email_notifications_enabled: val }).eq('id', profile.id).then(() => toast.success('Preference Logged'));
+                        }}
+                        className={`w-12 h-6 rounded-full transition-all relative ${profile.email_notifications_enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${profile.email_notifications_enabled ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-[var(--bg-base)]/50 border border-[var(--border-subtle)] rounded-2xl">
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-tight">Contest Reminders</p>
+                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-1">Calendar sync alerts</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const val = !profile.contest_reminders_enabled;
+                          setProfile({ ...profile, contest_reminders_enabled: val });
+                          supabase.from('profiles').update({ contest_reminders_enabled: val }).eq('id', profile.id).then(() => toast.success('Preference Logged'));
+                        }}
+                        className={`w-12 h-6 rounded-full transition-all relative ${profile.contest_reminders_enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${profile.contest_reminders_enabled ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                <h3 className="text-xl font-display font-bold text-white mb-10 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-rose-500" />
+                  </div>
+                  Security_Override
+                </h3>
+                <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-2">New Master Key</label>
+                    <input name="password" type="password" required className="w-full px-6 py-4 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-white rounded-2xl outline-none focus:border-rose-500/50 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-2">Verify Key</label>
+                    <input name="confirm" type="password" required className="w-full px-6 py-4 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-white rounded-2xl outline-none focus:border-rose-500/50 transition-all" />
+                  </div>
+                  <button type="submit" className="w-full py-4 bg-rose-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-rose-500/20 active:scale-[0.98]">Rotate Access Keys</button>
+                </form>
+              </div>
+            )}
+
+            {activeTab === 'referrals' && (
+              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                <div className="flex items-center justify-between mb-10">
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-center">
+                      <Share2 className="w-5 h-5 text-amber-500" />
+                    </div>
+                    Network_Expansion
+                  </h3>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Active_Nodes</p>
+                    <p className="text-2xl font-black text-amber-500 uppercase tracking-tighter">{profile?.referral_count || 0}</p>
+                  </div>
+                </div>
+
+                <div className="bg-[var(--bg-base)]/50 border border-dashed border-[var(--border-subtle)] rounded-3xl p-8 text-center">
+                  {profile?.referral_code ? (
+                    <div className="space-y-6">
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Your_Personal_Protocol_ID</p>
+                      <div className="flex items-center justify-center gap-4">
+                        <code className="text-4xl font-black text-white tracking-[0.2em]">{profile.referral_code}</code>
+                        <button onClick={copyRef} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+                          {copied ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)] font-medium max-w-xs mx-auto">Invite fellow strategists to earn Elite status and exclusive dataset access.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 py-4">
+                      <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-tight">Referral Protocol Offline</p>
+                      <button onClick={generateReferral} className="px-8 py-4 bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-[0.98]">Initialize Network Expansion</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Deep Infrastructure Column */}

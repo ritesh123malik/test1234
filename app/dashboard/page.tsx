@@ -2,14 +2,25 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { BookOpen, FileText, Map, Bookmark, TrendingUp, ArrowRight, Zap, Clock, Library } from 'lucide-react';
+import { BookOpen, FileText, Map, Bookmark, TrendingUp, ArrowRight, Zap, Clock, Library, Layout, Trophy } from 'lucide-react';
 import ContestCalendar from '@/components/dashboard/ContestCalendar';
 import ProfileStats from '@/components/dashboard/ProfileStats';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Wrap auth in a timeout to prevent page hang when Supabase is slow
+  let user = null;
+  try {
+    const authPromise = supabase.auth.getUser();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Auth timeout')), 5000)
+    );
+    const { data } = await Promise.race([authPromise, timeoutPromise]) as any;
+    user = data?.user ?? null;
+  } catch (e) {
+    console.warn('DashboardPage: Auth check timed out, redirecting to login');
+  }
   if (!user) redirect('/auth/login?redirect=/dashboard');
 
   // Fetch all user data in parallel
@@ -52,7 +63,7 @@ export default async function DashboardPage() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/20 text-[var(--brand-primary)] text-[10px] font-black uppercase tracking-[0.2em] mb-4">
               <Zap size={12} /> Mission_Command_Center
             </div>
-            <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+            <h1 className="text-4xl md:text-8xl font-black uppercase tracking-tighter mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
               Protocol <span className="text-transparent bg-clip-text bg-brand-gradient">Alpha</span>, {firstName}
             </h1>
             <p className="text-[var(--text-primary)] text-xl font-medium max-w-xl leading-relaxed opacity-90 drop-shadow-md">
@@ -106,20 +117,39 @@ export default async function DashboardPage() {
             <h2 className="text-sm font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
               <span className="w-8 h-[2px] bg-[var(--brand-primary)]" /> Rapid_Response
             </h2>
-            <div className="grid grid-cols-1 gap-4">
-              {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color }) => (
-                <Link key={href} href={href} className="group p-5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-3xl hover:border-[var(--brand-primary)]/50 transition-all flex items-center gap-5 shadow-lg">
-                  <div className="p-3 rounded-2xl bg-white/5 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)] group-hover:bg-[var(--brand-primary)]/10 transition-all">
-                    <Icon size={20} />
+                <div className="grid grid-cols-1 gap-4">
+                  {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color }) => (
+                    <Link key={href} href={href} className="group p-5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-3xl hover:border-[var(--brand-primary)]/50 transition-all flex items-center gap-5 shadow-lg">
+                      <div className="p-3 rounded-2xl bg-white/5 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)] group-hover:bg-[var(--brand-primary)]/10 transition-all">
+                        <Icon size={20} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] font-black text-[var(--text-primary)] uppercase tracking-tight group-hover:text-[var(--brand-primary)] transition-colors">{label}</p>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">{desc}</p>
+                      </div>
+                      <ArrowRight size={16} className="text-[var(--text-muted)] transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  ))}
+                  
+                  {/* Extension Callout */}
+                  <div className="mt-4 p-6 rounded-[2.5rem] bg-gradient-to-br from-indigo-500/10 to-blue-600/5 border border-indigo-500/20 shadow-xl group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
+                      <Layout size={48} />
+                    </div>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <Layout size={20} />
+                      </div>
+                      <h3 className="text-sm font-black text-white uppercase tracking-tight">Extension Active</h3>
+                    </div>
+                    <p className="text-[10px] font-medium text-gray-400 leading-relaxed mb-6">
+                      Solve problems directly on LeetCode & Codeforces with the companion extension.
+                    </p>
+                    <a href="#" className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">
+                      Sync Intelligence <ArrowRight size={12} />
+                    </a>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-black text-[var(--text-primary)] uppercase tracking-tight group-hover:text-[var(--brand-primary)] transition-colors">{label}</p>
-                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">{desc}</p>
-                  </div>
-                  <ArrowRight size={16} className="text-[var(--text-muted)] transition-transform group-hover:translate-x-1" />
-                </Link>
-              ))}
-            </div>
+                </div>
           </div>
 
           <div className="lg:col-span-2">

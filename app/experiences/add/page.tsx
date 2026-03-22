@@ -20,12 +20,15 @@ export default function AddExperiencePage() {
     const [success, setSuccess] = useState(false);
     const [formData, setFormData] = useState({
         company_id: '',
+        company_name: '', // Fallback for "Other"
         title: '',
         role: 'SDE',
         difficulty: 'Medium',
         content: '',
+        outcome: 'Pending',
         is_premium: false
     });
+    const [rounds, setRounds] = useState([{ title: 'Round 1', content: '' }]);
 
     const router = useRouter();
 
@@ -49,6 +52,7 @@ export default function AddExperiencePage() {
 
         const { error } = await supabase.from('interview_experiences').insert({
             ...formData,
+            rounds, // JSONB
             user_id: user.id
         });
 
@@ -107,28 +111,64 @@ export default function AddExperiencePage() {
                                             className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-[var(--brand-primary)] transition-all appearance-none"
                                         >
                                             <option value="" className="bg-gray-900">Select Company</option>
+                                            <option value="other" className="bg-gray-900">+ Other (Not in List)</option>
                                             {companies.map(c => (
                                                 <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Threat Level (Difficulty)</label>
-                                    <div className="flex gap-2">
-                                        {['Easy', 'Medium', 'Hard'].map(d => (
-                                            <button
-                                                key={d}
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, difficulty: d }))}
-                                                className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.difficulty === d
+
+                                {formData.company_id === 'other' && (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Company Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="Enter company name..."
+                                            value={formData.company_name}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
+                                            className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-[var(--brand-primary)] transition-all"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Outcome</label>
+                                        <div className="flex gap-2">
+                                            {['Selected', 'Rejected', 'Pending'].map(o => (
+                                                <button
+                                                    key={o}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, outcome: o }))}
+                                                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.outcome === o
+                                                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg'
+                                                        : 'bg-white/5 border-white/10 text-[var(--text-muted)] hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {o}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Threat Level (Difficulty)</label>
+                                        <div className="flex gap-2">
+                                            {['Easy', 'Medium', 'Hard'].map(d => (
+                                                <button
+                                                    key={d}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, difficulty: d }))}
+                                                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.difficulty === d
                                                         ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)] text-white shadow-lg'
                                                         : 'bg-white/5 border-white/10 text-[var(--text-muted)] hover:bg-white/10'
                                                     }`}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
+                                                >
+                                                    {d}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -146,13 +186,51 @@ export default function AddExperiencePage() {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Tactical Report (Experience Details)</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Interview Rounds</label>
+                                <div className="space-y-4">
+                                    {rounds.map((round, idx) => (
+                                        <div key={idx} className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                                            <input
+                                                type="text"
+                                                placeholder={`Round ${idx + 1} Title (e.g. Technical Round 1)`}
+                                                value={round.title}
+                                                onChange={(e) => {
+                                                    const newRounds = [...rounds];
+                                                    newRounds[idx].title = e.target.value;
+                                                    setRounds(newRounds);
+                                                }}
+                                                className="w-full px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-[var(--brand-primary)] transition-all text-sm font-bold"
+                                            />
+                                            <textarea
+                                                placeholder="Describe the topics covered, questions asked..."
+                                                value={round.content}
+                                                onChange={(e) => {
+                                                    const newRounds = [...rounds];
+                                                    newRounds[idx].content = e.target.value;
+                                                    setRounds(newRounds);
+                                                }}
+                                                className="w-full px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-[var(--brand-primary)] transition-all h-32 resize-none text-sm"
+                                            />
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setRounds([...rounds, { title: `Round ${rounds.length + 1}`, content: '' }])}
+                                        className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:border-[var(--brand-primary)] hover:text-white transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={16} /> Add Another Round
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Summary & Advice (Overall Content)</label>
                                 <textarea
                                     required
-                                    placeholder="Describe the rounds, questions asked, and your advice..."
+                                    placeholder="Brief overview and advice for future candidates..."
                                     value={formData.content}
                                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-[var(--brand-primary)] transition-all h-64 resize-none"
+                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-[var(--brand-primary)] transition-all h-40 resize-none"
                                 />
                             </div>
 

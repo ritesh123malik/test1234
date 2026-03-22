@@ -7,8 +7,8 @@ export default function CompanyCard({ company }: { company: Company }) {
   const initials = company.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <Link href={`/company/${company.slug}`}
-      className="card card-hover p-6 flex flex-col gap-4 group">
+    <div className="card card-hover p-6 flex flex-col gap-4 group cursor-pointer"
+         onClick={() => window.location.href = `/company/${company.slug}`}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -39,12 +39,24 @@ export default function CompanyCard({ company }: { company: Company }) {
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
-        <span className="text-text-muted text-xs">{company.hq}</span>
-        <span className="text-blue text-xs font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-          View questions <ExternalLink size={11} />
-        </span>
+      <div className="flex flex-col gap-3 pt-2 border-t border-border mt-auto">
+        <div className="flex items-center justify-between">
+          <span className="text-text-muted text-xs">{company.hq}</span>
+          <span className="text-blue text-xs font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+            View details <ExternalLink size={11} />
+          </span>
+        </div>
+        
+        <Link 
+          href={`/practice/simulation?company=${company.slug}`}
+          onClick={(e) => e.stopPropagation()}
+          className="w-full py-2 bg-blue/10 hover:bg-blue/20 border border-blue/20 rounded-lg 
+                     flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue transition-all"
+        >
+          <Zap size={12} fill="currentColor" />
+          Start Simulation
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }

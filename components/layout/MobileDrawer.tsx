@@ -104,7 +104,7 @@ export function MobileDrawer() {
                                     <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold">R</div>
                                     <div className="flex-1">
                                         <p className="text-sm font-bold text-text-primary">Ritish Malik</p>
-                                        <p className="text-[10px] text-text-muted">LNMIT Student</p>
+                                        <p className="text-[10px] text-text-muted">LNMIIT Student</p>
                                     </div>
                                 </div>
                                 <button className="w-full flex items-center gap-4 p-4 rounded-2xl text-brand-danger hover:bg-brand-danger/5 transition-all">

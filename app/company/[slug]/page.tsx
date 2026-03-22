@@ -145,7 +145,7 @@ export default function CompanyPage() {
             </div>
 
             <div className="flex gap-4">
-              <Link href="/quiz" className="btn-primary-lg !py-4 !px-8 flex items-center gap-3">
+              <Link href={`/practice/simulation?company=${slug}`} className="btn-primary-lg !py-4 !px-8 flex items-center gap-3">
                 <Zap size={18} />
                 Start Simulation
               </Link>
@@ -327,7 +327,7 @@ export default function CompanyPage() {
                         </div>
                         <div>
                           <p className="text-xs font-black text-white uppercase tracking-tight">{exp.profiles?.full_name || 'Anonymous Strategist'}</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">{exp.profiles?.college || 'Verified LNMIT Agent'}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">{exp.profiles?.college || 'Verified LNMIIT Agent'}</p>
                         </div>
                       </div>
                       <p className="text-[var(--text-secondary)] text-lg leading-relaxed font-medium">

@@ -11,6 +11,11 @@ import {
     BriefcaseIcon,
     PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+
 
 interface AIAssistantProps {
     problem?: string;
@@ -121,9 +126,53 @@ export default function AIAssistant({ problem, onClose }: AIAssistantProps) {
                     >
                         <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${msg.role === 'user'
                             ? 'bg-[var(--brand-primary)] text-white rounded-br-none'
-                            : 'bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-secondary)] rounded-bl-none'
+                            : 'bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-secondary)] rounded-bl-none prose prose-invert prose-sm max-w-none'
                             }`}>
-                            {msg.content}
+                            {msg.role === 'user' ? (
+                                msg.content
+                            ) : (
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        code({ node, inline, className, children, ...props }: any) {
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            return !inline && match ? (
+                                                <div className="rounded-lg overflow-hidden my-4 border border-[var(--border-subtle)]">
+                                                    <div className="bg-[var(--bg-base)]/80 px-4 py-1.5 border-b border-[var(--border-subtle)] flex justify-between items-center">
+                                                        <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider">{match[1]}</span>
+                                                    </div>
+                                                    <SyntaxHighlighter
+                                                        style={vscDarkPlus}
+                                                        language={match[1]}
+                                                        PreTag="div"
+                                                        customStyle={{
+                                                            margin: 0,
+                                                            padding: '1rem',
+                                                            fontSize: '0.8rem',
+                                                            background: 'transparent',
+                                                        }}
+                                                        {...props}
+                                                    >
+                                                        {String(children).replace(/\n$/, '')}
+                                                    </SyntaxHighlighter>
+                                                </div>
+                                            ) : (
+                                                <code className={`${className} bg-[var(--bg-base)] px-1.5 py-0.5 rounded text-[var(--brand-primary)] font-mono`} {...props}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        },
+                                        h3: ({ children }) => <h3 className="text-lg font-bold text-[var(--text-primary)] mt-6 mb-4">{children}</h3>,
+                                        p: ({ children }) => <p className="mb-4 last:mb-0 text-[var(--text-secondary)]">{children}</p>,
+                                        ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-2">{children}</ul>,
+                                        ol: ({ children }) => <ol className="list-decimal pl-5 mb-4 space-y-2">{children}</ol>,
+                                        li: ({ children }) => <li className="text-[var(--text-secondary)]">{children}</li>,
+                                        blockquote: ({ children }) => <blockquote className="border-l-4 border-[var(--brand-primary)] pl-4 italic my-4 text-[var(--text-muted)]">{children}</blockquote>,
+                                    }}
+                                >
+                                    {msg.content}
+                                </ReactMarkdown>
+                            )}
                         </div>
                     </motion.div>
                 ))}

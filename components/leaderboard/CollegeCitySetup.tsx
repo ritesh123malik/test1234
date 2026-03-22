@@ -4,16 +4,20 @@ import { useState, useEffect } from 'react';
 interface Props {
     currentCollege: string;
     currentCity: string;
-    onSave: (college: string, city: string) => Promise<void>;
+    currentCgpa?: number;
+    onSave: (college: string, city: string, cgpa: number) => Promise<void>;
 }
 
-export default function CollegeCitySetup({ currentCollege, currentCity, onSave }: Props) {
+export default function CollegeCitySetup({ currentCollege, currentCity, currentCgpa, onSave }: Props) {
     const [college, setCollege] = useState(currentCollege ?? '');
     const [city, setCity] = useState(currentCity ?? '');
+    const [cgpa, setCgpa] = useState(currentCgpa ?? 0);
     const [collegeResults, setCollegeResults] = useState([]);
     const [cityResults, setCityResults] = useState([]);
     const [saving, setSaving] = useState(false);
 
+    // ... (useEffect for college/city search stays same)
+    
     // Debounced college search
     useEffect(() => {
         if (college.length < 2) { setCollegeResults([]); return; }
@@ -38,7 +42,7 @@ export default function CollegeCitySetup({ currentCollege, currentCity, onSave }
 
     const handleSave = async () => {
         setSaving(true);
-        await onSave(college, city);
+        await onSave(college, city, cgpa);
         setSaving(false);
     };
 
@@ -56,7 +60,7 @@ export default function CollegeCitySetup({ currentCollege, currentCity, onSave }
                 </div>
             </div>
 
-            {/* College input with autocomplete */}
+            {/* College input */}
             <div className='relative'>
                 <label className='text-gray-500 text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block'>Target Institution</label>
                 <div className="relative group">
@@ -67,20 +71,13 @@ export default function CollegeCitySetup({ currentCollege, currentCity, onSave }
                         className='w-full bg-gray-800/50 text-white rounded-2xl px-5 py-4 text-sm font-bold
                 border border-gray-700/50 outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-600'
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity">
-                        <span className="text-xs">🏛️</span>
-                    </div>
                 </div>
-
                 {collegeResults.length > 0 && (
                     <div className='absolute top-full left-0 right-0 mt-3 bg-gray-900/95 backdrop-blur-xl
             border border-gray-800 rounded-2xl z-[100] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 p-1'>
                         {collegeResults.map((c: any) => (
-                            <button key={c.name}
-                                type="button"
-                                onClick={() => { setCollege(c.name); setCollegeResults([]); }}
-                                className='w-full text-left px-4 py-3 text-sm text-gray-300 font-bold
-                  hover:bg-blue-600 hover:text-white rounded-xl flex justify-between items-center transition-all group'>
+                            <button key={c.name} onClick={() => { setCollege(c.name); setCollegeResults([]); }}
+                                className='w-full text-left px-4 py-3 text-sm text-gray-300 font-bold hover:bg-blue-600 hover:text-white rounded-xl flex justify-between items-center transition-all group'>
                                 <span>{c.name}</span>
                                 <span className='text-[10px] opacity-50 group-hover:opacity-100 uppercase tracking-tighter'>{c.city}</span>
                             </button>
@@ -89,7 +86,7 @@ export default function CollegeCitySetup({ currentCollege, currentCity, onSave }
                 )}
             </div>
 
-            {/* City input with autocomplete */}
+            {/* City input */}
             <div className='relative'>
                 <label className='text-gray-500 text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block'>Current Base / City</label>
                 <div className="relative group">
@@ -100,26 +97,35 @@ export default function CollegeCitySetup({ currentCollege, currentCity, onSave }
                         className='w-full bg-gray-800/50 text-white rounded-2xl px-5 py-4 text-sm font-bold
                 border border-gray-700/50 outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-600'
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-focus-within:opacity-100 transition-opacity">
-                        <span className="text-xs">📍</span>
-                    </div>
                 </div>
-
                 {cityResults.length > 0 && (
                     <div className='absolute top-full left-0 right-0 mt-3 bg-gray-900/95 backdrop-blur-xl
             border border-gray-800 rounded-2xl z-[100] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 p-1'>
                         {cityResults.map((c: any) => (
-                            <button key={c.name}
-                                type="button"
-                                onClick={() => { setCity(c.name); setCityResults([]); }}
-                                className='w-full text-left px-4 py-3 text-sm text-gray-300 font-bold
-                  hover:bg-blue-600 hover:text-white rounded-xl flex justify-between items-center transition-all group'>
+                            <button key={c.name} onClick={() => { setCity(c.name); setCityResults([]); }}
+                                className='w-full text-left px-4 py-3 text-sm text-gray-300 font-bold hover:bg-blue-600 hover:text-white rounded-xl flex justify-between items-center transition-all group'>
                                 <span>{c.name}</span>
                                 <span className='text-[10px] opacity-50 group-hover:opacity-100 uppercase tracking-tighter'>{c.state}</span>
                             </button>
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* CGPA Slider */}
+            <div className="space-y-3">
+                <label className="text-gray-500 text-[10px] font-black uppercase tracking-widest ml-1 block">CGPA / GPA (0 – 10)</label>
+                <div className="flex items-center gap-6">
+                    <input
+                        type="range" min="0" max="10" step="0.1"
+                        value={cgpa}
+                        onChange={e => setCgpa(parseFloat(e.target.value))}
+                        className="flex-1 accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-blue-400 font-mono font-bold w-12 text-right text-lg">
+                        {cgpa.toFixed(1)}
+                    </span>
+                </div>
             </div>
 
             <button onClick={handleSave} disabled={saving}

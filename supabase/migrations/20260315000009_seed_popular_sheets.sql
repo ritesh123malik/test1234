@@ -48,7 +48,17 @@ SELECT seed_sheet_questions('Top 75 LeetCode', '[
     {"title": "Two Sum", "url": "https://leetcode.com/problems/two-sum/", "platform": "leetcode", "difficulty": "Easy", "topic_tags": ["Array", "Hash Table"]},
     {"title": "Three Sum", "url": "https://leetcode.com/problems/3sum/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array", "Two Pointers"]},
     {"title": "Clone Graph", "url": "https://leetcode.com/problems/clone-graph/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Graph", "DFS"]},
-    {"title": "Non-overlapping Intervals", "url": "https://leetcode.com/problems/non-overlapping-intervals/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Greedy", "Sorting"]}
-]');
+    {"title": "Non-overlapping Intervals", "url": "https://leetcode.com/problems/non-overlapping-intervals/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Greedy", "Sorting"]},
+    {"title": "Best Time to Buy and Sell Stock", "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/", "platform": "leetcode", "difficulty": "Easy", "topic_tags": ["Array", "DP"]},
+    {"title": "Contains Duplicate", "url": "https://leetcode.com/problems/contains-duplicate/", "platform": "leetcode", "difficulty": "Easy", "topic_tags": ["Array", "Hash Table"]},
+    {"title": "Product of Array Except Self", "url": "https://leetcode.com/problems/product-of-array-except-self/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array"]},
+    {"title": "Maximum Subarray", "url": "https://leetcode.com/problems/maximum-subarray/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array", "DP"]},
+    {"title": "Maximum Product Subarray", "url": "https://leetcode.com/problems/maximum-product-subarray/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array", "DP"]},
+    {"title": "Find Minimum in Rotated Sorted Array", "url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array", "Binary Search"]},
+    {"title": "Search in Rotated Sorted Array", "url": "https://leetcode.com/problems/search-in-rotated-sorted-array/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Array", "Binary Search"]},
+    {"title": "Number of 1 Bits", "url": "https://leetcode.com/problems/number-of-1-bits/", "platform": "leetcode", "difficulty": "Easy", "topic_tags": ["Bit Manipulation"]},
+    {"title": "Sum of Two Integers", "url": "https://leetcode.com/problems/sum-of-two-integers/", "platform": "leetcode", "difficulty": "Medium", "topic_tags": ["Bit Manipulation"]},
+    {"title": "Counting Bits", "url": "https://leetcode.com/problems/counting-bits/", "platform": "leetcode", "difficulty": "Easy", "topic_tags": ["Bit Manipulation", "DP"]}
+]);
 
 DROP FUNCTION seed_sheet_questions(TEXT, JSONB);

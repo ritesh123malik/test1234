@@ -46,37 +46,38 @@ export default function SpeechReport({ metrics }: { metrics: SpeechMetrics }) {
                 <div className='text-right'>
                     <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Comm Score</p>
                     <div className={`text-4xl font-display font-black leading-none ${metrics.communication_score >= 8 ? 'text-emerald-400' :
-                            metrics.communication_score >= 6 ? 'text-amber-400' : 'text-rose-400'
+                        metrics.communication_score >= 6 ? 'text-amber-400' : 'text-rose-400'
                         }`}>{metrics.communication_score}<span className="text-sm text-gray-600 ml-1">/10</span></div>
                 </div>
             </div>
 
-            <div className='grid grid-cols-3 gap-4'>
-                <div className='bg-gray-800/50 border border-gray-700/50 rounded-2xl p-5 text-center relative overflow-hidden group'>
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">⚡</div>
-                    <p className='text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2'>Pace</p>
-                    <p className='text-white font-black text-2xl mb-1'>{metrics.words_per_minute}</p>
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${paceClass}`}>
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4'>
+                <div className='bg-gray-800/50 border border-gray-700/50 rounded-xl md:rounded-2xl p-4 md:p-5 text-center relative overflow-hidden group'>
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform text-xs md:text-base">⚡</div>
+                    <p className='text-gray-500 text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2'>Pace</p>
+                    <p className='text-white font-black text-xl md:text-2xl mb-1'>{metrics.words_per_minute}</p>
+                    <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 md:py-1 rounded-full ${paceClass}`}>
                         {metrics.pace_label}
                     </span>
                 </div>
-                <div className='bg-gray-800/50 border border-gray-700/50 rounded-2xl p-5 text-center relative overflow-hidden group'>
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">🛑</div>
-                    <p className='text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2'>Fillers</p>
-                    <p className={`font-black text-2xl mb-1 ${metrics.filler_rate_percent <= 2 ? 'text-emerald-400' :
-                            metrics.filler_rate_percent <= 5 ? 'text-amber-400' : 'text-rose-400'
+                <div className='bg-gray-800/50 border border-gray-700/50 rounded-xl md:rounded-2xl p-4 md:p-5 text-center relative overflow-hidden group'>
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform text-xs md:text-base">🛑</div>
+                    <p className='text-gray-500 text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2'>Fillers</p>
+                    <p className={`font-black text-xl md:text-2xl mb-1 ${metrics.filler_rate_percent <= 2 ? 'text-emerald-400' :
+                        metrics.filler_rate_percent <= 5 ? 'text-amber-400' : 'text-rose-400'
                         }`}>{metrics.filler_rate_percent.toFixed(1)}%</p>
-                    <p className='text-gray-500 text-[10px] font-bold'>{metrics.filler_count} detected</p>
+                    <p className='text-gray-500 text-[8px] md:text-[9px] font-bold'>{metrics.filler_count} detected</p>
                 </div>
-                <div className='bg-gray-800/50 border border-gray-700/50 rounded-2xl p-5 text-center relative overflow-hidden group'>
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">📚</div>
-                    <p className='text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2'>Lexicon</p>
-                    <p className={`font-black text-2xl mb-1 ${metrics.vocabulary_richness >= 0.65 ? 'text-emerald-400' :
-                            metrics.vocabulary_richness >= 0.5 ? 'text-amber-400' : 'text-rose-400'
+                <div className='bg-gray-800/50 border border-gray-700/50 rounded-xl md:rounded-2xl p-4 md:p-5 text-center relative overflow-hidden group'>
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform text-xs md:text-base">📚</div>
+                    <p className='text-gray-500 text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2'>Lexicon</p>
+                    <p className={`font-black text-xl md:text-2xl mb-1 ${metrics.vocabulary_richness >= 0.65 ? 'text-emerald-400' :
+                        metrics.vocabulary_richness >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                         }`}>{Math.round(metrics.vocabulary_richness * 100)}%</p>
-                    <p className='text-gray-500 text-[10px] font-bold'>Unique words</p>
+                    <p className='text-gray-500 text-[8px] md:text-[9px] font-bold'>Unique words</p>
                 </div>
             </div>
+
 
             <div className="space-y-4">
                 <ScoreGauge score={metrics.communication_score} label='Overall Articulation Performance' />
@@ -91,10 +92,10 @@ export default function SpeechReport({ metrics }: { metrics: SpeechMetrics }) {
                         {topFillers.map(([word, count]) => (
                             <span key={word}
                                 className={`text-xs px-4 py-2 rounded-xl font-bold border flex items-center gap-2 transition-all hover:scale-105 ${count >= 5
-                                        ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
-                                        : count >= 3
-                                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
-                                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                                    ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
+                                    : count >= 3
+                                        ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                        : 'bg-gray-800 text-gray-400 border-gray-700'
                                     }`}
                             >
                                 <span className="opacity-50">&quot;{word}&quot;</span>

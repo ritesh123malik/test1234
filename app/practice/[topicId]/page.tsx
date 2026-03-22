@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
     ChevronLeft,
@@ -13,7 +13,7 @@ import {
     Trophy
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const TOPIC_DETAILS: Record<string, any> = {
     'dsa': { name: 'Data Structures & Algorithms', count: 1200, icon: <Brain className="text-blue-500" /> },
@@ -25,19 +25,57 @@ const TOPIC_DETAILS: Record<string, any> = {
 
 export default function TopicPractice() {
     const { topicId } = useParams();
+    const router = useRouter();
     const topic = TOPIC_DETAILS[topicId as string] || {
         name: (topicId as string)?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Practice Modules',
         count: 0,
         icon: <Brain className="text-gray-500" />
     };
+    
     const [filter, setFilter] = useState('All');
+    const [questions, setQuestions] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isStartingTest, setIsStartingTest] = useState(false);
 
-    const MOCK_QUESTIONS = [
-        { id: 1, title: 'Two Sum', difficulty: 'Easy', status: 'Solved', hot: true },
-        { id: 2, title: 'Median of Two Sorted Arrays', difficulty: 'Hard', status: 'Unsolved', hot: false },
-        { id: 3, title: 'Longest Palindromic Substring', difficulty: 'Medium', status: 'Solved', hot: true },
-        { id: 4, title: 'Merge k Sorted Lists', difficulty: 'Hard', status: 'Pending', hot: false }
-    ];
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/practice/questions?category=${topicId}&difficulty=${filter}`);
+                const data = await res.json();
+                setQuestions(data.questions || []);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchQuestions();
+    }, [topicId, filter]);
+
+    const handleStartTimed = async () => {
+        setIsStartingTest(true);
+        try {
+            const res = await fetch('/api/practice/timed', {
+                method: 'POST',
+                body: JSON.stringify({
+                    topicId,
+                    difficulty: filter === 'All' ? 'Medium' : filter,
+                    duration: 60
+                })
+            });
+            const data = await res.json();
+            if (data.attempt) {
+                router.push(`/oa-simulator/${data.attempt.id}`);
+            } else {
+                alert(data.error || 'Failed to start timed test');
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsStartingTest(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#050505] text-white py-12 px-6">
@@ -60,6 +98,20 @@ export default function TopicPractice() {
                             </div>
                         </div>
                     </div>
+
+                    <button
+                        onClick={handleStartTimed}
+                        disabled={isStartingTest}
+                        className="group relative px-8 py-5 bg-blue-600 rounded-2xl flex items-center gap-4 overflow-hidden transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                        <Clock size={20} className="text-white" />
+                        <div className="text-left">
+                            <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Initialize_Sprint</div>
+                            <div className="text-md font-black uppercase tracking-tighter leading-none">Start Timed Test (60m)</div>
+                        </div>
+                        <Play size={16} fill="white" className="ml-4" />
+                    </button>
                 </div>
 
                 <div className="grid lg:grid-cols-4 gap-12">
@@ -81,42 +133,47 @@ export default function TopicPractice() {
                     </div>
 
                     <div className="lg:col-span-3 space-y-4">
-                        {MOCK_QUESTIONS.filter(q => filter === 'All' || q.difficulty === filter).map((q, idx) => (
-                            <motion.div
-                                key={q.id}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                onClick={() => {
-                                    const query = encodeURIComponent(`${q.title} interview question`);
-                                    window.open(`https://www.google.com/search?q=${query}`, '_blank');
-                                }}
-                                className="group p-6 bg-white/[0.02] border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all flex items-center justify-between cursor-pointer"
-                            >
-                                <div className="flex items-center gap-6">
-                                    <div className={`w-2 h-12 rounded-full ${q.difficulty === 'Easy' ? 'bg-emerald-500/50' : q.difficulty === 'Medium' ? 'bg-amber-500/50' : 'bg-red-500/50'}`} />
-                                    <div>
-                                        <h4 className="text-lg font-black uppercase tracking-tight group-hover:text-blue-400 transition-colors">{q.title}</h4>
-                                        <div className="flex items-center gap-4 mt-2">
-                                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${q.difficulty === 'Easy' ? 'border-emerald-500/20 text-emerald-500' : q.difficulty === 'Medium' ? 'border-amber-500/20 text-amber-500' : 'border-red-500/20 text-red-500'}`}>
-                                                {q.difficulty}
-                                            </span>
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">Sync_ID_{q.id * 832}</span>
+                        {isLoading ? (
+                            <div className="p-20 text-center font-black uppercase tracking-[0.5em] text-white/10">Synchronizing_Archives...</div>
+                        ) : questions.length > 0 ? (
+                            questions.map((q, idx) => (
+                                <motion.div
+                                    key={q.id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    onClick={() => {
+                                        const query = encodeURIComponent(`${q.title} interview question`);
+                                        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                                    }}
+                                    className="group p-6 bg-white/[0.02] border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all flex items-center justify-between cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-6">
+                                        <div className={`w-2 h-12 rounded-full ${q.difficulty === 'Easy' ? 'bg-emerald-500/50' : q.difficulty === 'Medium' ? 'bg-amber-500/50' : 'bg-red-500/50'}`} />
+                                        <div>
+                                            <h4 className="text-lg font-black uppercase tracking-tight group-hover:text-blue-400 transition-colors">{q.title}</h4>
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${q.difficulty === 'Easy' ? 'border-emerald-500/20 text-emerald-500' : q.difficulty === 'Medium' ? 'border-amber-500/20 text-amber-500' : 'border-red-500/20 text-red-500'}`}>
+                                                    {q.difficulty}
+                                                </span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-600">Archived_ID_{q.id.toString().slice(0, 8)}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-4">
-                                    {q.status === 'Solved' ? (
-                                        <CheckCircle2 className="text-emerald-500" size={20} />
-                                    ) : (
+                                    <div className="flex items-center gap-4">
                                         <div className="p-4 rounded-2xl bg-white/5 group-hover:bg-blue-600 text-gray-400 group-hover:text-white transition-all group-hover:scale-105 active:scale-95">
                                             <Play size={16} fill="currentColor" />
                                         </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        ))}
+                                    </div>
+                                </motion.div>
+                            ))
+                        ) : (
+                            <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                                <h3 className="text-xl font-black text-gray-500 uppercase tracking-widest mb-2">No Modules Found</h3>
+                                <p className="text-gray-600 text-xs font-bold">Try adjusting your filters or checking back later.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

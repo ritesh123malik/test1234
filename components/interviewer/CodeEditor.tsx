@@ -95,7 +95,8 @@ export default function CodeEditor({ onCodeChange, onLanguageChange }: CodeEdito
             </div>
 
             {/* Monaco Editor */}
-            <div className="flex-1 min-h-[400px]">
+            <div className="flex-1 min-h-[300px] md:min-h-[400px]">
+
                 <Editor
                     height='100%'
                     language={language === 'cpp' ? 'cpp' : language}
@@ -126,8 +127,8 @@ export default function CodeEditor({ onCodeChange, onLanguageChange }: CodeEdito
 
             {/* Mini Terminal */}
             <div className={`p-4 font-mono text-[11px] h-32 overflow-y-auto border-t transition-colors ${outputStatus === 'error' ? 'bg-red-500/5 border-red-500/20 text-red-400' :
-                    outputStatus === 'success' ? 'bg-green-500/5 border-green-500/20 text-green-400' :
-                        'bg-black/40 border-gray-800 text-gray-500'
+                outputStatus === 'success' ? 'bg-green-500/5 border-green-500/20 text-green-400' :
+                    'bg-black/40 border-gray-800 text-gray-500'
                 }`}>
                 <div className="flex items-center gap-2 mb-2 opacity-50">
                     <TerminalIcon size={12} />

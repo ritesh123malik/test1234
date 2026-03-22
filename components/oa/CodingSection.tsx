@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Code2, Play, Send, LayoutPanelLeft } from 'lucide-react';
 import AudioHintButton from '@/components/ui/AudioHintButton';
+import Editor from '@monaco-editor/react';
 
 interface CodingSectionProps {
     question: any;
@@ -74,13 +75,26 @@ export default function CodingSection({ question, onRun, onSubmit }: CodingSecti
                         </div>
                     </div>
 
-                    {/* Pseudo Editor (Textarea for prototype) */}
-                    <textarea
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        className="flex-1 w-full bg-transparent p-8 font-mono text-sm text-gray-300 resize-none focus:outline-none"
-                        spellCheck={false}
-                    />
+                    {/* Monaco Editor */}
+                    <div className="flex-1 min-h-[400px]">
+                        <Editor
+                            height="100%"
+                            language={language === 'cpp' ? 'cpp' : language === 'python' ? 'python' : 'java'}
+                            theme="vs-dark"
+                            value={code}
+                            onChange={(value) => setCode(value || '')}
+                            options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                                fontFamily: 'var(--font-mono)',
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true,
+                                padding: { top: 20, bottom: 20 },
+                                background: 'transparent'
+                            }}
+                            loading={<div className="p-8 text-gray-500 font-mono text-xs">INITIALIZING_ENGINE...</div>}
+                        />
+                    </div>
                 </div>
 
                 {/* Console Output */}

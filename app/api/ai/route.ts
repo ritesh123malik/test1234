@@ -6,7 +6,8 @@ import {
     explainProblem,
     generateSolutionApproach,
     getHint,
-    debugCode
+    debugCode,
+    generatePracticeQuestions
 } from '@/lib/ai-service';
 
 export async function POST(req: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { action, problem, difficulty, code, language, systemPrompt: bodySystemPrompt } = body;
+        const { action, problem, difficulty, count, topic, code, language, subtopics, systemPrompt: bodySystemPrompt } = body;
 
         // 1. Check Premium Gate (Selective)
         if (action !== 'chat') {
@@ -47,6 +48,12 @@ export async function POST(req: NextRequest) {
             case 'chat':
                 result = await getAIResponse(problem, user.id, bodySystemPrompt);
                 break;
+            case 'generate-questions':
+                const questions = await generatePracticeQuestions(topic, difficulty, count, subtopics);
+                return NextResponse.json({ success: true, result: questions });
+            case 'generate-simulation':
+                const simQuestions = await generatePracticeQuestions(topic, difficulty, count, subtopics, body.mode, body.format);
+                return NextResponse.json({ success: true, questions: simQuestions });
             default:
                 result = await getAIResponse(problem, user.id, "You're a LeetCode expert.");
         }
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
         console.error('API error:', error);
         return NextResponse.json(
-            { success: false, error: 'Failed to get AI response' },
+            { error: 'Failed to get AI response' },
             { status: 500 }
         );
     }

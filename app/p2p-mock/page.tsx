@@ -96,7 +96,7 @@ export default function P2PLobby() {
                                 P2P <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600">Mock.</span>
                             </h1>
                             <p className="text-gray-500 max-w-xl text-lg font-medium leading-relaxed">
-                                Don't interview alone. Practice with other LNMITians, trade feedback, and build the nerves of steel required for real placements.
+                                Don't interview alone. Practice with other LNMIITians, trade feedback, and build the nerves of steel required for real placements.
                             </p>
                         </div>
 

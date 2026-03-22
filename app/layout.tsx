@@ -38,15 +38,24 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from '@/components/theme-provider';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark scroll-smooth">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-body antialiased bg-bg-base text-text-primary selection:bg-brand-primary selection:text-white`}>
-        <Layout>
-          {children}
-        </Layout>
-        <AIFloatingButton />
-        <Toaster position="top-center" richColors />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Layout>
+            {children}
+          </Layout>
+          <AIFloatingButton />
+          <Toaster position="top-right" theme="dark" closeButton richColors />
+        </ThemeProvider>
       </body>
     </html>
   );

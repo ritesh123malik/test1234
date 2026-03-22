@@ -6,13 +6,20 @@ import {
 } from '@/services/daily-challenge-service';
 
 // GET /api/daily-challenge — fetch today's challenge + user status
-export async function GET() {
+export async function GET(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const lcDiff = searchParams.get('lc_diff') || undefined;
+    const cfLevel = searchParams.get('cf_level') ? parseInt(searchParams.get('cf_level')!) : undefined;
 
     try {
-        const data = await getTodaysChallenge(user.id);
+        const data = await getTodaysChallenge(user.id, lcDiff, cfLevel);
         return NextResponse.json(data);
     } catch (err: any) {
         console.error('Daily Challenge GET Error:', err);
@@ -24,7 +31,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     try {
         const { challengeId, status, platform } = await req.json();

@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       .digest('hex');
 
     if (expectedSignature !== signature) {
-      return Response.json({ success: false, error: 'Invalid payment signature' }, { status: 400 });
+      return Response.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
     // Calculate expiry
@@ -43,6 +43,6 @@ export async function POST(req: Request) {
     return Response.json({ success: true });
   } catch (err: any) {
     console.error('Payment verify error:', err);
-    return Response.json({ success: false, error: err.message }, { status: 500 });
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }

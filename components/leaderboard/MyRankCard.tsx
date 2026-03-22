@@ -47,14 +47,14 @@ export default function MyRankCard({ rank }: { rank: Rank | null }) {
                 </div>
             </div>
 
-            <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
+            <div className='grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4'>
                 {stats.map(s => (
-                    <div key={s.label} className='bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 border border-white/5 flex flex-col justify-between group/card'>
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm opacity-80">{s.icon}</span>
-                            <p className='text-gray-500 text-[10px] font-black uppercase tracking-wider group-hover/card:text-gray-400 transition-colors'>{s.label}</p>
+                    <div key={s.label} className='bg-gray-800/50 backdrop-blur-sm rounded-2xl p-3 md:p-4 border border-white/5 flex flex-col justify-between group/card'>
+                        <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                            <span className="text-xs md:text-sm opacity-80">{s.icon}</span>
+                            <p className='text-gray-500 text-[8px] md:text-[10px] font-black uppercase tracking-wider group-hover/card:text-gray-400 transition-colors'>{s.label}</p>
                         </div>
-                        <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                        <p className={`text-lg md:text-xl font-black ${s.color}`}>{s.value}</p>
                     </div>
                 ))}
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User,
@@ -30,6 +30,50 @@ export default function ProfileStats({ profile: initialProfile, isPro }: Profile
     const [showArenaSetup, setShowArenaSetup] = useState(false);
     const supabase = createClient();
 
+    const syncAllCompanyPrepScores = async () => {
+        if (!profile?.id) return;
+        try {
+            const { data: solvedList } = await supabase
+                .from('user_solved_questions')
+                .select('lc_slug, cf_problem_id, question_id')
+                .eq('user_id', profile.id);
+
+            const solvedSlugs = new Set(solvedList?.map(s => s.lc_slug).filter(Boolean));
+            const solvedCF = new Set(solvedList?.map(s => s.cf_problem_id).filter(Boolean));
+
+            const { data: companies } = await supabase.from('companies').select('id');
+            if (!companies) return;
+
+            for (const company of companies) {
+                const { data: qs } = await supabase
+                    .from('company_questions')
+                    .select('id, lc_slug, cf_problem_id')
+                    .eq('company_id', company.id);
+                if (!qs || qs.length === 0) continue;
+
+                const solvedCount = qs.filter(q =>
+                    (q.lc_slug && solvedSlugs.has(q.lc_slug)) ||
+                    (q.cf_problem_id && solvedCF.has(q.cf_problem_id))
+                ).length;
+
+                await supabase.from('user_company_progress').upsert({
+                    user_id: profile.id,
+                    company_id: company.id,
+                    prep_score: Math.round((solvedCount / qs.length) * 100),
+                    solved_count: solvedCount,
+                    total_count: qs.length,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id,company_id' });
+            }
+        } catch (err) {
+            console.error('Failed to sync prep scores:', err);
+        }
+    };
+
+    useEffect(() => {
+        syncAllCompanyPrepScores();
+    }, [profile?.id]);
+
     const handleUpdateCgpa = async () => {
         setIsSaving(true);
         try {
@@ -49,17 +93,18 @@ export default function ProfileStats({ profile: initialProfile, isPro }: Profile
         }
     };
 
-    const handleSaveArena = async (college: string, city: string) => {
+    const handleSaveArena = async (college: string, city: string, cgpa: number) => {
         setIsSaving(true);
         try {
             const { error } = await supabase
                 .from('profiles')
-                .update({ college, city })
+                .update({ college, city, cgpa })
                 .eq('id', profile.id);
 
             if (error) throw error;
 
-            setProfile({ ...profile, college, city });
+            setProfile({ ...profile, college, city, cgpa });
+            setNewCgpa(cgpa);
             setShowArenaSetup(false);
             alert('Arena Identity Synchronized Successfully');
         } catch (err: any) {
@@ -71,7 +116,7 @@ export default function ProfileStats({ profile: initialProfile, isPro }: Profile
     };
 
     return (
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-8 rounded-[2.5rem] shadow-xl relative group overflow-hidden">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-6 md:p-8 rounded-[2.5rem] shadow-xl relative group overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary)]/5 blur-[50px] rounded-full group-hover:bg-[var(--brand-primary)]/10 transition-all" />
 
             <div className="flex items-center justify-between mb-8">
@@ -156,7 +201,7 @@ export default function ProfileStats({ profile: initialProfile, isPro }: Profile
                                     <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Academic CGPA (0-10)</label>
                                     <input
                                         type="number"
-                                        step="0.01"
+                                        step="0.1"
                                         min="0"
                                         max="10"
                                         value={newCgpa}
@@ -205,6 +250,7 @@ export default function ProfileStats({ profile: initialProfile, isPro }: Profile
                             <CollegeCitySetup
                                 currentCollege={profile?.college || ''}
                                 currentCity={profile?.city || ''}
+                                currentCgpa={profile?.cgpa || 0}
                                 onSave={handleSaveArena}
                             />
                         </div>

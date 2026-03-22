@@ -102,12 +102,13 @@ export default function SettingsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-bg-base py-12 pt-32">
-            <div className="max-w-2xl mx-auto px-6">
-                <div className="mb-12">
-                    <h1 className="font-display font-bold text-4xl text-text-primary tracking-tight">Account Settings</h1>
-                    <p className="text-text-secondary mt-3 text-lg">Manage your placement-intel experience and professional core.</p>
+        <div className="min-h-screen bg-bg-base py-8 md:py-12 pt-24 md:pt-32">
+            <div className="max-w-2xl mx-auto px-4 md:px-6">
+                <div className="mb-8 md:mb-12 text-center md:text-left">
+                    <h1 className="font-display font-bold text-3xl md:text-4xl text-text-primary tracking-tight">Account Settings</h1>
+                    <p className="text-text-secondary mt-2 md:mt-3 text-sm md:text-lg italic">Manage your placement-intel experience and professional core.</p>
                 </div>
+
 
                 {/* Account Summary Widget */}
                 <div className="glass-card p-6 mb-10 border-brand-primary/20 bg-brand-primary/5 flex items-center gap-6">

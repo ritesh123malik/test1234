@@ -109,6 +109,19 @@ export default function ExperiencesPage() {
                                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">
                                         {exp.role}
                                     </span>
+                                    {exp.outcome && (
+                                        <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${exp.outcome === 'Selected' ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/5' :
+                                                exp.outcome === 'Rejected' ? 'text-red-400 border-red-400/20 bg-red-400/5' :
+                                                    'text-amber-400 border-amber-400/20 bg-amber-400/5'
+                                            }`}>
+                                            {exp.outcome}
+                                        </span>
+                                    )}
+                                    {!exp.is_verified && (
+                                        <span className="px-2 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest border border-amber-500/20">
+                                            Pending Verification
+                                        </span>
+                                    )}
                                 </div>
 
                                 <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 group-hover:text-[var(--brand-primary)] transition-colors leading-tight">
@@ -118,7 +131,7 @@ export default function ExperiencesPage() {
                                 <div className="flex items-center gap-6 text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest mb-8">
                                     <div className="flex items-center gap-2">
                                         <Building2 size={14} className="text-[var(--brand-primary)]" />
-                                        {exp.companies?.name}
+                                        {exp.companies?.name || exp.company_name || 'Anonymous Co.'}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Clock size={14} />

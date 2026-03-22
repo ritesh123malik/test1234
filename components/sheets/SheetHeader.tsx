@@ -49,26 +49,28 @@ export default function SheetHeader() {
 
     return (
         <>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                <div>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12 text-center md:text-left">
+                <div className="flex flex-col items-center md:items-start">
                     <p className="section-label mb-2">Platform Aggregator</p>
-                    <h1 className="font-display font-bold text-4xl text-text-primary tracking-tight">Question Sheets</h1>
-                    <p className="text-text-muted mt-2 max-w-xl text-lg">
+                    <h1 className="font-display font-bold text-3xl md:text-4xl text-text-primary tracking-tight">Question Sheets</h1>
+                    <p className="text-text-muted mt-2 max-w-xl text-sm md:text-lg">
                         Curated lists of the most important questions for top-tech roles. Track your progress across everything.
                     </p>
                 </div>
 
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="btn-primary w-fit flex items-center gap-2 shadow-lg shadow-brand-primary/20 hover:scale-105 transition-all"
+                    className="btn-primary w-full md:w-fit flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20 hover:scale-105 transition-all py-3.5 md:py-2.5"
                 >
                     <Plus size={18} strokeWidth={3} /> Create Custom Sheet
                 </button>
             </div>
 
+
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg-base/80 backdrop-blur-md">
-                    <div className="glass-card w-full max-w-md p-8 relative overflow-hidden">
+                    <div className="glass-card w-full max-w-md p-6 md:p-8 relative overflow-hidden">
+
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-primary to-brand-secondary" />
                         <button
                             onClick={() => setIsOpen(false)}

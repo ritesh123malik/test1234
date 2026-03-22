@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Square, Loader2, Sparkles, ChevronLeft, Volume2, MicOff, AlertCircle, CheckCircle2, Code } from 'lucide-react';
+import { Mic, Square, Loader2, Sparkles, ChevronLeft, Volume2, MicOff, AlertCircle, CheckCircle2, Code, Activity } from 'lucide-react';
+
 import EvaluationDashboard from '@/components/interviewer/EvaluationDashboard';
 import SpeechReport from '@/components/interviewer/SpeechReport';
 import dynamic from 'next/dynamic';
@@ -111,8 +112,8 @@ export default function InterviewRoom() {
             if (transError) throw new Error(transError);
             setTranscript(transcript);
 
-            // 2. Evaluate
-            const evalRes = await fetch('/api/interviewer', {
+            // 2. Evaluate with Streaming
+            const response = await fetch('/api/interviewer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -123,17 +124,47 @@ export default function InterviewRoom() {
                     codeSnippet: showEditor ? codeSnippet : undefined,
                     codeLanguage: showEditor ? codeLanguage : undefined,
                     interviewType: interviewType || 'DSA',
-                    audioDurationSeconds: audioDuration
+                    audioDurationSeconds: audioDuration,
+                    stream: true
                 }),
             });
-            const { evaluation, error: evalError } = await evalRes.json();
-            if (evalError) throw new Error(evalError);
 
-            setEvaluation(evaluation);
-            setSpeechMetrics(evaluation.speechMetrics || null);
-            setAllEvals(prev => [...prev, evaluation]);
-            setQuestion(evaluation.follow_up_question);
-            setIsLoading(false);
+            if (!response.body) throw new Error('No response body');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedQuestion = '';
+            setQuestion(''); // Clear current question to start streaming new one
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const text = decoder.decode(value);
+                const lines = text.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.chunk) {
+                                // Groq in JSON mode returns chunks of the JSON object
+                                // We'll try to extract follow_up_question if it's visible or just wait for 'done'
+                                // For now, we'll just accumulate and update loading state
+                                accumulatedQuestion += data.chunk;
+                            }
+                            if (data.done) {
+                                setEvaluation(data.evaluation);
+                                setSpeechMetrics(data.evaluation.speechMetrics || null);
+                                setAllEvals(prev => [...prev, data.evaluation]);
+                                setQuestion(data.evaluation.follow_up_question);
+                                setIsLoading(false);
+                            }
+                        } catch (e) {
+                            // Partial JSON parse error, ignore
+                        }
+                    }
+                }
+            }
         } catch (err: any) {
             console.error('Pipeline failed:', err);
             setError(err.message || 'Something went wrong. Please try again.');
@@ -253,29 +284,29 @@ export default function InterviewRoom() {
                 </div>
             </nav>
 
-            <div className='max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 p-6 lg:p-12'>
+            <div className='max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 md:gap-8 p-4 md:p-6 lg:p-12'>
                 {isEnded ? (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex-1 bg-gray-900/40 rounded-3xl p-12 border border-gray-800 text-center space-y-8"
+                        className="flex-1 bg-gray-900/40 rounded-3xl p-6 md:p-12 border border-gray-800 text-center space-y-6 md:space-y-10"
                     >
-                        <div className="space-y-4">
-                            <div className="mx-auto w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
-                                <CheckCircle2 size={40} />
+                        <div className="space-y-3 md:space-y-4">
+                            <div className="mx-auto w-16 h-16 md:w-20 md:h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
+                                <CheckCircle2 size={32} md-size={40} />
                             </div>
-                            <h2 className="text-4xl font-black">Interview Completed</h2>
-                            <p className="text-gray-400 max-w-md mx-auto">Great job! Your interview session has been analyzed. You can find your detailed score breakdown below.</p>
+                            <h2 className="text-2xl md:text-4xl font-black">Interview Completed</h2>
+                            <p className="text-gray-400 text-sm md:text-base max-w-md mx-auto">Great job! Your interview session has been analyzed. You can find your detailed score breakdown below.</p>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 font-display">
                             {['Correctness', 'Depth', 'Clarity', 'Structure'].map(label => {
                                 const key = label.toLowerCase();
                                 const avg = Math.round(allEvals.reduce((acc, e) => acc + e.score_breakdown[key], 0) / (allEvals.length || 1));
                                 return (
-                                    <div key={label} className="bg-black/40 p-4 rounded-2xl border border-gray-800">
-                                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">{label}</p>
-                                        <p className="text-2xl font-black text-blue-400">{avg * 10}%</p>
+                                    <div key={label} className="bg-black/40 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-800">
+                                        <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">{label}</p>
+                                        <p className="text-xl md:text-2xl font-black text-blue-400">{avg * 10}%</p>
                                     </div>
                                 )
                             })}
@@ -283,30 +314,30 @@ export default function InterviewRoom() {
 
                         <button
                             onClick={() => router.push('/interviewer')}
-                            className="px-8 py-4 bg-white text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-colors"
+                            className="w-full md:w-fit px-8 py-4 bg-white text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-colors"
                         >
                             Return to Hub
                         </button>
                     </motion.div>
                 ) : (
                     /* Left: Interview Area */
-                    <div className='flex-1 space-y-8'>
+                    <div className='flex-1 space-y-6 md:space-y-8 min-w-0'>
 
                         {/* Question Display */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className='bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 lg:p-12 border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group'
+                            className='bg-gradient-to-br from-gray-900 to-black rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group'
                         >
-                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Sparkles size={100} />
+                            <div className="absolute top-0 right-0 p-6 md:p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Sparkles size={80} md-size={100} />
                             </div>
 
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-blue-500/10 rounded-xl">
-                                    <Sparkles className="text-blue-400" size={24} />
+                            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                                <div className="p-1.5 md:p-2 bg-blue-500/10 rounded-lg md:rounded-xl">
+                                    <Sparkles className="text-blue-400" size={20} md-size={24} />
                                 </div>
-                                <span className='text-blue-400 text-xs font-black uppercase tracking-[0.2em]'>Current Question</span>
+                                <span className='text-blue-400 text-[10px] md:text-xs font-black uppercase tracking-[0.2em]'>Current Question</span>
                             </div>
 
                             <AnimatePresence mode="wait">
@@ -316,17 +347,17 @@ export default function InterviewRoom() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        className="space-y-4"
+                                        className="space-y-3 md:space-y-4"
                                     >
-                                        <div className="h-8 bg-gray-800 animate-pulse rounded-lg w-3/4" />
-                                        <div className="h-8 bg-gray-800 animate-pulse rounded-lg w-1/2" />
+                                        <div className="h-6 md:h-8 bg-gray-800 animate-pulse rounded-lg w-3/4" />
+                                        <div className="h-6 md:h-8 bg-gray-800 animate-pulse rounded-lg w-1/2" />
                                     </motion.div>
                                 ) : (
                                     <motion.p
                                         key="question"
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className='text-xl md:text-3xl font-bold leading-tight tracking-tight'
+                                        className='text-lg md:text-2xl lg:text-3xl font-bold leading-tight tracking-tight'
                                     >
                                         {question}
                                     </motion.p>
@@ -339,39 +370,39 @@ export default function InterviewRoom() {
                             <div className="relative">
                                 <canvas
                                     ref={canvasRef}
-                                    className="w-full h-24 bg-gray-950/50 rounded-2xl border border-gray-900"
+                                    className="w-full h-16 md:h-24 bg-gray-950/50 rounded-xl md:rounded-2xl border border-gray-900"
                                     width={800}
                                     height={100}
                                 />
                                 {!isRecording && !isLoading && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-[10px] uppercase tracking-widest font-black pointer-events-none">
-                                        WAVEFORM READY • READY TO CAPTURE
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-700 text-[8px] md:text-[10px] uppercase tracking-widest font-black pointer-events-none">
+                                        WAVEFORM READY • SYSTEM ACTIVE
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                 <button
                                     onClick={isRecording ? stopStreaming : startStreaming}
                                     disabled={isLoading}
-                                    className={`flex-1 py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 ${isRecording
+                                    className={`flex-1 py-4 md:py-6 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all flex items-center justify-center gap-3 md:gap-4 ${isRecording
                                         ? 'bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.2)]'
                                         : 'bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_30px_rgba(37,99,235,0.3)]'
                                         }`}
                                 >
                                     {isLoading ? (
-                                        <><Loader2 className="animate-spin" size={20} /> ANALYZING...</>
+                                        <><Loader2 className="animate-spin" size={18} md-size={20} /> ANALYZING...</>
                                     ) : isRecording ? (
-                                        <><Square size={20} fill="currentColor" /> STOP_STREAM</>
+                                        <><Square size={18} md-size={20} fill="currentColor" /> STOP_STREAM</>
                                     ) : (
-                                        <><Mic size={20} /> START_ANSWER</>
+                                        <><Mic size={18} md-size={20} /> START_ANSWER</>
                                     )}
                                 </button>
 
                                 <button
-                                    className="p-6 bg-gray-900 border border-gray-800 rounded-2xl text-gray-500 hover:text-white transition-colors"
+                                    className="p-4 md:p-6 bg-gray-900 border border-gray-800 rounded-xl md:rounded-2xl text-gray-500 hover:text-white transition-colors flex items-center justify-center"
                                 >
-                                    <Volume2 size={24} />
+                                    <Volume2 size={20} md-size={24} />
                                 </button>
                             </div>
 
@@ -379,37 +410,39 @@ export default function InterviewRoom() {
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-400 text-sm font-medium"
+                                    className="p-3 md:p-4 bg-red-500/10 border border-red-500/30 rounded-lg md:rounded-xl flex items-center gap-2 md:gap-3 text-red-400 text-xs md:text-sm font-medium"
                                 >
-                                    <AlertCircle size={18} />
+                                    <AlertCircle size={16} md-size={18} />
                                     {error}
                                 </motion.div>
                             )}
                         </div>
 
-                        {/* Editor Toggle (for Behavioral/HR) and Editor View */}
-                        {(interviewType === 'Behavioral' || interviewType === 'HR') && (
-                            <div className="mt-6 flex justify-end">
-                                <button
-                                    onClick={() => setShowEditor(!showEditor)}
-                                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                    <Code size={14} />
-                                    {showEditor ? 'HIDE_CODE_EDITOR' : 'SHOW_CODE_EDITOR'}
-                                </button>
-                            </div>
-                        )}
-
-                        {showEditor && (
+                        {/* Editor Toggle and View */}
+                        {(interviewType === 'DSA' || interviewType === 'System Design' || showEditor) && (
                             <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="mt-8 border-t border-gray-800 pt-8"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="mt-4 md:mt-8 border-t border-gray-800 pt-6 md:pt-8"
                             >
-                                <CodeEditor
-                                    onCodeChange={setCodeSnippet}
-                                    onLanguageChange={setCodeLanguage}
-                                />
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <Code size={16} className="text-blue-400" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Collaboration Space_</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowEditor(!showEditor)}
+                                        className="lg:hidden text-[10px] font-black uppercase tracking-widest text-blue-400"
+                                    >
+                                        {showEditor ? 'Collapse' : 'Expand'}
+                                    </button>
+                                </div>
+                                <div className={`${!showEditor && 'hidden lg:block'}`}>
+                                    <CodeEditor
+                                        onCodeChange={setCodeSnippet}
+                                        onLanguageChange={setCodeLanguage}
+                                    />
+                                </div>
                             </motion.div>
                         )}
 
@@ -418,13 +451,13 @@ export default function InterviewRoom() {
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className='bg-gray-900/40 rounded-3xl p-6 border border-gray-800'
+                                className='bg-gray-900/40 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-800'
                             >
-                                <p className='text-gray-500 text-[10px] uppercase font-black tracking-widest mb-3 flex items-center gap-2'>
-                                    <MicOff size={12} />
+                                <p className='text-gray-500 text-[8px] md:text-[10px] uppercase font-black tracking-widest mb-2 md:mb-3 flex items-center gap-2'>
+                                    <MicOff size={10} md-size={12} />
                                     Input Captured_
                                 </p>
-                                <p className='text-gray-300 text-sm leading-relaxed'>
+                                <p className='text-gray-300 text-xs md:text-sm leading-relaxed italic'>
                                     "{transcript}"
                                 </p>
                             </motion.div>
@@ -432,7 +465,11 @@ export default function InterviewRoom() {
                     </div>
                 )}
                 {/* Right: Live Feedback */}
-                <div className="lg:w-[400px] space-y-6">
+                <div className="w-full lg:w-[400px] space-y-4 md:space-y-6">
+                    <div className="flex items-center gap-2 mb-2 lg:hidden">
+                        <Activity size={16} className="text-blue-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tactical Insights_</span>
+                    </div>
                     <EvaluationDashboard evaluation={evaluation} allEvals={allEvals} />
                     {speechMetrics && <SpeechReport metrics={speechMetrics} />}
                 </div>

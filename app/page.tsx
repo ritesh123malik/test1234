@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowUpRight } from 'lucide-react';
 import { Hero } from '@/components/sections/Hero';
 import { Features } from '@/components/sections/Features';
 import { motion } from 'framer-motion';
@@ -29,7 +31,7 @@ export default function HomePage() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-6xl font-display font-black text-white mb-8 leading-tight">
-              Built for <span className="text-brand-tertiary underline decoration-brand-tertiary/30">LNMITians.</span>
+              Built for <span className="text-brand-tertiary underline decoration-brand-tertiary/30">LNMIITians.</span>
             </h2>
             <p className="text-text-secondary text-lg md:text-xl mb-12 max-w-2xl mx-auto font-medium">
               Join 2,400+ your batchmates already using PlacementIntel to crack top tech companies.
@@ -52,28 +54,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
-
-      {/* Footer Simulation (Simple) */}
-      <footer className="py-20 px-6 border-t border-border-subtle bg-bg-surface/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-3">
-            <span className="font-display font-bold text-xl tracking-tight text-text-primary">
-              placement<span className="text-brand-primary">intel</span>
-            </span>
-            <span className="badge-lnmit">LNMIT</span>
-          </div>
-          <div className="flex gap-8 text-[10px] font-black tracking-[0.2em] text-text-muted uppercase">
-            <a href="#" className="hover:text-brand-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">Support</a>
-            <a href="#" className="hover:text-brand-primary transition-colors">LinkedIn</a>
-          </div>
-          <p className="text-[10px] font-bold text-text-muted/40">© 2024 SELECTION INTELLIGENCE. ALL RIGHTS RESERVED.</p>
-        </div>
-      </footer>
     </div>
   );
 }
-
-import { ArrowUpRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';

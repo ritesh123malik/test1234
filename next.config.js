@@ -15,6 +15,15 @@ const nextConfig = {
     // Remove this line if it exists:
     // serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/quiz',
+        destination: '/mock-test',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

@@ -57,15 +57,15 @@ export function Hero() {
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-tertiary"></span>
                     </span>
                     <span className="text-[10px] font-black tracking-widest text-text-primary uppercase flex items-center gap-2">
-                        Built exclusively for LNMIT Students
+                        Built exclusively for LNMIIT Students
                         <div className="w-[1px] h-3 bg-border-strong mx-1" />
-                        <span className="text-brand-tertiary">v1.2 Live</span>
+                        <span className="text-brand-tertiary">v1.3 Live</span>
                     </span>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 </motion.div>
 
                 {/* Headline */}
-                <h1 className="text-6xl md:text-8xl font-display font-black tracking-tighter text-text-primary mb-8 leading-[0.9]">
+                <h1 className="text-4xl md:text-8xl font-display font-black tracking-tighter text-text-primary mb-8 leading-[1.1] md:leading-[0.9]">
                     {headlineWords.map((word, i) => (
                         <motion.span
                             key={i}
@@ -86,7 +86,7 @@ export function Hero() {
                     transition={{ delay: 0.8, duration: 0.6 }}
                     className="text-lg md:text-xl text-text-secondary max-w-3xl mx-auto mb-12 leading-relaxed"
                 >
-                    The ultimate toolkit to master technical interviews, track your progress, and secure placements at dream companies — powered by real LNMIT data and AI insights.
+                    The ultimate toolkit to master technical interviews, track your progress, and secure placements at dream companies — powered by real LNMIIT data and AI insights.
                 </motion.p>
 
                 {/* CTAs */}
@@ -117,30 +117,30 @@ export function Hero() {
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                     <div className="flex flex-col items-center">
-                        <span className="text-3xl font-display font-black text-text-primary">{counts.students.toLocaleString()}+</span>
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1 group/item">
-                            LNMIT Students
+                        <span className="text-3xl font-display font-black text-text-primary tracking-tighter">{counts.students.toLocaleString()}+</span>
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2 group/item">
+                            Selected Questions (LC/CF)
                         </span>
                     </div>
 
-                    <div className="flex flex-col items-center border-l lg:border-l border-border-subtle">
-                        <span className="text-3xl font-display font-black text-text-primary">{counts.companies}+</span>
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">
-                            Companies Tracked
+                    <div className="flex flex-col items-center border-l border-border-subtle">
+                        <span className="text-3xl font-display font-black text-text-primary tracking-tighter">{counts.companies}+</span>
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2">
+                            Company Interview Loops
                         </span>
                     </div>
 
-                    <div className="flex flex-col items-center border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0">
-                        <span className="text-3xl font-display font-black text-brand-success">{counts.rate}%</span>
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">
-                            Placement Rate
+                    <div className="flex flex-col items-center border-t md:border-t-0 md:border-l border-border-subtle pt-8 md:pt-0">
+                        <span className="text-3xl font-display font-black text-brand-success tracking-tighter">{counts.rate}%</span>
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2">
+                            Data Accuracy
                         </span>
                     </div>
 
-                    <div className="flex flex-col items-center border-t lg:border-t-0 lg:border-l border-border-subtle pt-8 lg:pt-0">
-                        <span className="text-3xl font-display font-black text-text-primary">{counts.reviews.toLocaleString()}+</span>
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">
-                            Interview Reviews
+                    <div className="flex flex-col items-center border-t md:border-t-0 md:border-l border-border-subtle pt-8 md:pt-0">
+                        <span className="text-3xl font-display font-black text-text-primary tracking-tighter">{counts.reviews.toLocaleString()}+</span>
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2">
+                            Intel Nodes
                         </span>
                     </div>
                 </div>

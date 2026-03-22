@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import DailyChallengeCard from '@/components/daily-challenge/DailyChallengeCard';
 import StreakCalendar from '@/components/daily-challenge/StreakCalendar';
+import { toast } from 'sonner';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 // Dynamic import for confetti to avoid SSR issues
 const fireConfetti = async () => {
@@ -19,11 +21,16 @@ export default function DailyChallengePage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Difficulty Settings
+    const [lcDiff, setLcDiff] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
+    const [cfLevel, setCfLevel] = useState<number>(1);
 
-    const fetchData = async () => {
+    const fetchData = async (lDiff = lcDiff, cLevel = cfLevel) => {
         try {
+            setLoading(true);
             const [challengeRes, historyRes] = await Promise.all([
-                fetch('/api/daily-challenge'),
+                fetch(`/api/daily-challenge?lc_diff=${lDiff}&cf_level=${cLevel}`),
                 fetch('/api/daily-challenge/history')
             ]);
 
@@ -45,6 +52,16 @@ export default function DailyChallengePage() {
         fetchData();
     }, []);
 
+    const handleDifficultyChange = (platform: 'leetcode' | 'codeforces', value: any) => {
+        if (platform === 'leetcode') {
+            setLcDiff(value);
+            fetchData(value, cfLevel);
+        } else {
+            setCfLevel(value);
+            fetchData(lcDiff, value);
+        }
+    };
+
     const handleSubmit = async (status: 'solved' | 'attempted' | 'skipped', platform: 'leetcode' | 'codeforces') => {
         const challenge = data[platform]?.challenge;
         if (!challenge?.id) return;
@@ -59,22 +76,33 @@ export default function DailyChallengePage() {
             const result = await res.json();
 
             if (res.ok) {
-                if (status === 'solved') await fireConfetti();
+                if (status === 'solved') {
+                    await fireConfetti();
+                    toast.success(`Success! +${result.xp_earned || 25} XP secured.`);
+                } else {
+                    toast.success(`Protocol updated: ${status}.`);
+                }
                 await fetchData();
             } else {
-                alert(result.error || 'Submission failed');
+                toast.error(result.error || 'Submission failed');
             }
         } catch (err) {
             console.error('Submission Error:', err);
-            alert('An unexpected error occurred');
+            toast.error('Tactical failure: link interrupted');
         }
     };
 
     if (loading) {
         return (
-            <div className='flex flex-col items-center justify-center min-h-[60vh] text-gray-400'>
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p>Loading Daily Challenges...</p>
+            <div className='max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12 space-y-12'>
+                <div className="space-y-4">
+                    <div className="h-12 bg-gray-800/50 rounded-2xl w-48 animate-pulse" />
+                    <div className="h-4 bg-gray-800/50 rounded-lg w-64 animate-pulse" />
+                </div>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                    <CardSkeleton />
+                    <CardSkeleton />
+                </div>
             </div>
         );
     }
@@ -90,28 +118,40 @@ export default function DailyChallengePage() {
     }
 
     return (
-        <div className='max-w-6xl mx-auto px-4 py-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700'>
-            <div className="space-y-2">
-                <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Daily Challenges</h1>
-                <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">1 LeetCode + 1 Codeforces every day • Tactical Mastery</p>
+        <div className='max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12 space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700'>
+            <div className="space-y-2 text-center md:text-left pt-4 md:pt-0">
+                <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">Daily Arena</h1>
+                <p className="text-gray-400 font-bold uppercase text-[10px] md:text-xs tracking-widest">1 LeetCode + 1 Codeforces every day • Tactical Mastery</p>
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-                {data.leetcode?.challenge && (
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                {data.leetcode?.challenge ? (
                     <DailyChallengeCard
                         challenge={data.leetcode.challenge}
                         submission={data.leetcode.submission}
                         profile={data.profile}
+                        currentLevel={lcDiff}
+                        onDifficultyChange={(v) => handleDifficultyChange('leetcode', v)}
                         onSubmit={handleSubmit}
                     />
+                ) : (
+                    <div className="bg-gray-900/50 rounded-3xl p-8 border border-dashed border-gray-800 flex items-center justify-center text-gray-500 text-xs uppercase font-black tracking-widest min-h-[300px]">
+                        LeetCode Challenge Pending_
+                    </div>
                 )}
-                {data.codeforces?.challenge && (
+                {data.codeforces?.challenge ? (
                     <DailyChallengeCard
                         challenge={data.codeforces.challenge}
                         submission={data.codeforces.submission}
                         profile={data.profile}
+                        currentLevel={cfLevel}
+                        onDifficultyChange={(v) => handleDifficultyChange('codeforces', v)}
                         onSubmit={handleSubmit}
                     />
+                ) : (
+                    <div className="bg-gray-900/50 rounded-3xl p-8 border border-dashed border-gray-800 flex items-center justify-center text-gray-500 text-xs uppercase font-black tracking-widest min-h-[300px]">
+                        Codeforces Challenge Pending_
+                    </div>
                 )}
             </div>
 

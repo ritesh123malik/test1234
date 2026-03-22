@@ -12,10 +12,12 @@ import {
     Plus,
     X,
     Loader2,
-    Zap
+    Zap,
+    RefreshCw
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Question {
     id: string;
@@ -40,6 +42,9 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
     const supabase = createClient();
     const [questions, setQuestions] = useState(initialQuestions);
     const [userStatus, setUserStatus] = useState<Record<string, string>>({});
+    const [syncedSolves, setSyncedSolves] = useState<Set<string>>(new Set());
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [solverCounts, setSolverCounts] = useState<Record<string, number>>({});
     const [filter, setFilter] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
     const [statusFilter, setStatusFilter] = useState<'All' | 'Solved' | 'Unsolved'>('All');
     const [search, setSearch] = useState('');
@@ -47,7 +52,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
     const [isAdding, setIsAdding] = useState(false);
     const [newQuestion, setNewQuestion] = useState({ title: '', url: '', difficulty: 'Medium' });
 
-    // Fetch user-specific status on mount
     useEffect(() => {
         const fetchUserStatus = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -70,34 +74,113 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                 }), {});
                 setUserStatus(statusMap);
             }
+
+            // Also fetch automatic solves from leetcode/codeforces
+            const { data: autoSolves } = await supabase
+                .from('user_solved_questions')
+                .select('lc_slug, cf_problem_id, platform')
+                .eq('user_id', user.id);
+
+            if (autoSolves) {
+                const solvedSet = new Set<string>();
+                autoSolves.forEach(s => {
+                    const id = s.platform === 'leetcode' ? s.lc_slug : s.cf_problem_id;
+                    if (id) solvedSet.add(`${s.platform}:${id}`);
+                });
+                setSyncedSolves(solvedSet);
+            }
         };
+
+        const fetchSolverCounts = async () => {
+            const questionIds = questions.map(q => q.id);
+            if (questionIds.length === 0) return;
+
+            const { data, error } = await supabase
+                .from('user_question_status')
+                .select('question_id')
+                .eq('status', 'solved')
+                .in('question_id', questionIds);
+
+            if (data) {
+                const counts = data.reduce((acc: Record<string, number>, curr: any) => {
+                    acc[curr.question_id] = (acc[curr.question_id] || 0) + 1;
+                    return acc;
+                }, {});
+                setSolverCounts(counts);
+            }
+        };
+
         fetchUserStatus();
-    }, [sheetId, supabase]);
+        fetchSolverCounts();
+    }, [questions, supabase]);
+
+    const extractIdFromUrl = (url: string, platform: string) => {
+        if (!url) return null;
+        const p = (platform || 'leetcode').toLowerCase();
+        if (p === 'leetcode' || p === 'lc') {
+            const match = url.match(/\/problems\/([^/]+)/);
+            return match ? match[1] : null;
+        }
+        if (p === 'codeforces' || p === 'cf') {
+            const contestMatch = url.match(/\/contest\/(\d+)\/problem\/([^/]+)/);
+            if (contestMatch) return `${contestMatch[1]}_${contestMatch[2]}`;
+            const problemsetMatch = url.match(/\/problemset\/problem\/(\d+)\/([^/]+)/);
+            if (problemsetMatch) return `${problemsetMatch[1]}_${problemsetMatch[2]}`;
+        }
+        return null;
+    };
+
+    const normalizePlatform = (p: string) => {
+        const lower = (p || 'leetcode').toLowerCase();
+        if (lower === 'lc') return 'leetcode';
+        if (lower === 'cf') return 'codeforces';
+        return lower;
+    };
 
     const filteredQuestions = useMemo(() => {
         return questions.filter(q => {
-            const currentStatus = userStatus[q.id] || 'unsolved';
+            const isManualSolved = userStatus[q.id] === 'solved';
+            const platform = normalizePlatform(q.platform || 'leetcode');
+            const extId = q.external_id || extractIdFromUrl(q.url, platform);
+            const isAutoSolved = extId && syncedSolves.has(`${platform}:${extId}`);
+            const currentStatus = (isManualSolved || isAutoSolved) ? 'solved' : 'unsolved';
+            
             const matchesDifficulty = filter === 'All' || q.difficulty === filter;
             const matchesStatus = statusFilter === 'All' ||
                 (statusFilter === 'Solved' ? currentStatus === 'solved' : currentStatus !== 'solved');
             const matchesSearch = q.title.toLowerCase().includes(search.toLowerCase());
             return matchesDifficulty && matchesStatus && matchesSearch;
         });
-    }, [questions, userStatus, filter, statusFilter, search]);
+    }, [questions, userStatus, syncedSolves, filter, statusFilter, search]);
 
     const stats = useMemo(() => {
         const total = questions.length;
-        const solved = Object.values(userStatus).filter(s => s === 'solved').length;
-        const progress = total ? Math.round((solved / total) * 100) : 0;
-        return { total, solved, progress };
-    }, [questions, userStatus]);
+        const solvedCount = questions.filter(q => {
+            const isManualSolved = userStatus[q.id] === 'solved';
+            const platform = normalizePlatform(q.platform || 'leetcode');
+            const extId = q.external_id || extractIdFromUrl(q.url, platform);
+            const isAutoSolved = extId && syncedSolves.has(`${platform}:${extId}`);
+            return isManualSolved || isAutoSolved;
+        }).length;
+        const progress = total ? Math.round((solvedCount / total) * 100) : 0;
+        return { total, solved: solvedCount, progress };
+    }, [questions, userStatus, syncedSolves]);
 
     async function toggleStatus(questionId: string, currentStatus: string) {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            toast.error('Protocol violation: Authenticate to track progress');
+            return;
+        }
 
         const nextStatus = currentStatus === 'solved' ? 'unsolved' : 'solved';
         setUserStatus(prev => ({ ...prev, [questionId]: nextStatus }));
+        
+        // Update local solver count optimistically
+        setSolverCounts(prev => ({
+            ...prev,
+            [questionId]: (prev[questionId] || 0) + (nextStatus === 'solved' ? 1 : -1)
+        }));
 
         const { error } = await supabase
             .from('user_question_status')
@@ -110,7 +193,80 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
 
         if (error) {
             console.error('Error updating status:', error);
+            toast.error('Sync failure: Question status not persisted');
             setUserStatus(prev => ({ ...prev, [questionId]: currentStatus }));
+            setSolverCounts(prev => ({
+                ...prev,
+                [questionId]: (prev[questionId] || 0) + (currentStatus === 'solved' ? 1 : -1)
+            }));
+        }
+    }
+
+    async function handleSyncProgress() {
+        setIsSyncing(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // 1. Get User's platform usernames
+            const [{ data: lc }, { data: cf }] = await Promise.all([
+                supabase.from('leetcode_profiles').select('leetcode_username').eq('user_id', user.id).single(),
+                supabase.from('codeforces_profiles').select('codeforces_handle').eq('user_id', user.id).single()
+            ]);
+
+            // 2. Trigger individual syncs
+            const syncs = [];
+            if (lc?.leetcode_username) syncs.push(fetch('/api/sync-stats', {
+                method: 'POST', body: JSON.stringify({ platform: 'leetcode', username: lc.leetcode_username })
+            }));
+            if (cf?.codeforces_handle) syncs.push(fetch('/api/sync-stats', {
+                method: 'POST', body: JSON.stringify({ platform: 'codeforces', username: cf.codeforces_handle })
+            }));
+
+            if (syncs.length === 0) {
+                toast.error('Tactical Error: No external platforms linked in profile');
+                return;
+            }
+
+            const results = await Promise.all(syncs);
+            const data = await Promise.all(results.map(r => r.json()));
+
+            const errors = data.filter(d => d.error);
+            if (errors.length > 0) {
+                toast.error(errors[0].error);
+            } else {
+                const totalSolved = data.reduce((acc, d) => acc + (d.stats?.individual_count || 0), 0);
+                
+                // Re-fetch solves from DB
+                const { data: autoSolves } = await supabase
+                    .from('user_solved_questions')
+                    .select('lc_slug, cf_problem_id, platform')
+                    .eq('user_id', user.id);
+
+                if (autoSolves) {
+                    const solvedSet = new Set<string>();
+                    autoSolves.forEach(s => {
+                        const id = s.platform === 'leetcode' ? s.lc_slug : s.cf_problem_id;
+                        if (id) solvedSet.add(`${s.platform}:${id}`);
+                    });
+                    
+                    // Count matches in THIS sheet
+                    let matchCount = 0;
+                    questions.forEach(q => {
+                        const platform = normalizePlatform(q.platform || 'leetcode');
+                        const extId = q.external_id || extractIdFromUrl(q.url, platform);
+                        if (extId && solvedSet.has(`${platform}:${extId}`)) matchCount++;
+                    });
+
+                    setSyncedSolves(solvedSet);
+                    toast.success(`Sync Loop Complete: ${totalSolved} total identified, ${matchCount} matched in this sheet`);
+                }
+            }
+        } catch (err: any) {
+            console.error('Sync failure:', err);
+            toast.error('Protocol Error: Sync loop interrupted');
+        } finally {
+            setIsSyncing(false);
         }
     }
 
@@ -135,17 +291,14 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
 
             if (error) throw error;
 
-            // Add the new question to the list with a local ID if needed, 
-            // though 'inserted' should have the DB ID.
             setQuestions(prev => [...prev, inserted]);
             setIsAddModalOpen(false);
             setNewQuestion({ title: '', url: '', difficulty: 'Medium' });
+            toast.success('Strategy injected into Tactical Archive');
 
-            // Optional: You could add a toast here if sonner was installed, 
-            // but we'll stick to local state for now.
         } catch (err: any) {
             console.error('Injection error:', err);
-            alert('Failed to inject intel: ' + (err.message || 'Protocol interrupted'));
+            toast.error('Failed to inject intel: ' + (err.message || 'Protocol interrupted'));
         } finally {
             setIsAdding(false);
         }
@@ -153,7 +306,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
 
     return (
         <div className="space-y-8">
-            {/* Real-time Progress Card */}
             <div className="glass-card p-10 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[2.5rem] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-primary)]/5 blur-[100px] rounded-full" />
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
@@ -177,17 +329,31 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                             <span>Objective Complete</span>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="btn-primary-lg !py-4 !px-8 flex items-center gap-3 group"
-                    >
-                        <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-                        Inject New Data
-                    </button>
+                    <div>
+                        <div className="flex gap-4 mb-3">
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-all flex items-center gap-2"
+                            >
+                                <Plus size={14} /> Inject Intel
+                            </button>
+                            <button
+                                onClick={handleSyncProgress}
+                                disabled={isSyncing}
+                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                                    isSyncing 
+                                    ? 'bg-brand-primary/20 text-brand-primary cursor-not-allowed' 
+                                    : 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
+                                }`}
+                            >
+                                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                                {isSyncing ? 'Syncing...' : 'Sync Intel'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Filters Bar */}
             <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center sticky top-20 z-30 py-6 bg-[var(--bg-base)]/80 backdrop-blur-xl -mx-4 px-6 border-y border-[var(--border-subtle)]">
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl mr-2">
@@ -237,7 +403,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                 </div>
             </div>
 
-            {/* Questions Table */}
             <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[2.5rem] overflow-hidden shadow-2xl relative">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -266,31 +431,38 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                                 <tr key={q.id} className="hover:bg-white/[0.02] transition-all group">
                                     <td className="px-8 py-6 text-[11px] font-mono text-[var(--text-muted)] text-center font-black">#{String(q.question_number || idx + 1).padStart(3, '0')}</td>
                                     <td className="px-8 py-6">
-                                        <button
-                                            onClick={() => toggleStatus(q.id, userStatus[q.id] || 'unsolved')}
-                                            className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-tighter transition-all hover:scale-105 ${(userStatus[q.id] || 'unsolved') === 'solved' ? 'text-[var(--brand-success)]' :
-                                                'text-[var(--text-muted)] hover:text-white'
-                                                }`}
-                                        >
-                                            {(userStatus[q.id] || 'unsolved') === 'solved' ? <CheckCircle2 size={20} /> : <Circle size={20} />}
-                                            <span className="tracking-widest">{(userStatus[q.id] || 'unsolved')}</span>
-                                        </button>
+                                        {(() => {
+                                            const platform = normalizePlatform(q.platform || 'leetcode');
+                                            const extId = q.external_id || extractIdFromUrl(q.url, platform);
+                                            const isAutoSolved = extId && syncedSolves.has(`${platform}:${extId}`);
+                                            const isManualSolved = userStatus[q.id] === 'solved';
+                                            const isSolved = isManualSolved || isAutoSolved;
+
+                                            return (
+                                                <button
+                                                    onClick={() => toggleStatus(q.id, userStatus[q.id] || 'unsolved')}
+                                                    className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-tighter transition-all hover:scale-105 ${
+                                                        isSolved ? 'text-[var(--brand-success)]' : 'text-[var(--text-muted)] hover:text-white'
+                                                    }`}
+                                                >
+                                                    {isSolved ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                                                    <span className="tracking-widest capitalize">
+                                                        {isSolved ? 'solved' : 'unsolved'}
+                                                        {isAutoSolved && !isManualSolved && (
+                                                            <span className="text-[8px] opacity-40 ml-1">(synced)</span>
+                                                        )}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="max-w-md">
                                             <div className="flex items-center gap-3 mb-1">
-                                                {/* Platform Badge */}
                                                 <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${q.platform === 'leetcode' ? 'bg-yellow-500/20 text-yellow-500' :
-                                                    q.platform === 'codeforces' ? 'bg-blue-500/20 text-blue-500' :
-                                                        q.platform === 'cses' ? 'bg-teal-500/20 text-teal-500' :
-                                                            q.platform === 'gfg' ? 'bg-emerald-500/20 text-emerald-500' :
-                                                                q.platform === 'atcoder' ? 'bg-gray-500/20 text-gray-400' :
-                                                                    'bg-gray-500/20 text-gray-400'
+                                                    q.platform === 'codeforces' ? 'bg-blue-500/20 text-blue-500' : 'bg-gray-500/20 text-gray-400'
                                                     }`}>
-                                                    {q.platform === 'leetcode' ? 'LC' :
-                                                        q.platform === 'codeforces' ? 'CF' :
-                                                            q.platform === 'cses' ? 'CSES' :
-                                                                q.platform === 'atcoder' ? 'AC' : q.platform}
+                                                    {q.platform === 'leetcode' ? 'LC' : q.platform === 'codeforces' ? 'CF' : q.platform}
                                                 </span>
                                                 <p
                                                     className="text-[17px] font-black text-white group-hover:text-[var(--brand-primary)] transition-colors uppercase tracking-tight leading-tight cursor-pointer"
@@ -298,6 +470,11 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                                                 >
                                                     {q.title}
                                                 </p>
+                                                {solverCounts[q.id] > 0 && (
+                                                    <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-[var(--brand-success)] bg-[var(--brand-success)]/10 px-2 py-0.5 rounded-full ml-auto">
+                                                        <Zap size={8} fill="currentColor" /> {solverCounts[q.id]} Solved
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 {q.topic_tags?.slice(0, 3).map((tag: string) => (
@@ -305,15 +482,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                                                         {tag}
                                                     </span>
                                                 ))}
-                                                {q.notes && q.notes.startsWith('http') && (
-                                                    <a
-                                                        href={q.notes}
-                                                        target="_blank"
-                                                        className="text-[9px] bg-brand-primary/10 border border-brand-primary/20 px-3 py-1 rounded-lg text-brand-primary font-black uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all flex items-center gap-1"
-                                                    >
-                                                        Solution <ExternalLink size={10} />
-                                                    </a>
-                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -325,11 +493,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                                                 }`}>
                                                 {q.difficulty}
                                             </span>
-                                            {q.platform === 'codeforces' && q.rating && (
-                                                <span className="text-[9px] font-mono text-text-muted text-center tracking-widest">
-                                                    Rating: {q.rating}
-                                                </span>
-                                            )}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
@@ -349,7 +512,6 @@ export default function QuestionList({ initialQuestions, sheetId }: Props) {
                 </div>
             </div>
 
-            {/* Add Question Modal */}
             <AnimatePresence>
                 {isAddModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

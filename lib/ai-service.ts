@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 
 // Lazy initialization of Groq client
 let groqInstance: Groq | null = null;
-function getGroqClient() {
+export function getGroqClient() {
     if (!groqInstance) {
         groqInstance = new Groq({
             apiKey: process.env.GROQ_API_KEY || '',
@@ -14,30 +14,41 @@ function getGroqClient() {
 // Current Groq models as of 2026
 const MODELS = {
     // Latest Llama models
-    LLAMA_3_3_70B: 'llama-3.3-70b-versatile',  // New version
+    LLAMA_3_3_70B: 'llama-3.3-70b-versatile',
     LLAMA_3_1_8B: 'llama-3.1-8b-instant',
-    LLAMA_3_2_3B: 'llama-3.2-3b-preview',
-    LLAMA_3_2_1B: 'llama-3.2-1b-preview',
+    LLAMA_3_1_405B: 'llama-3.1-405b-reasoning',
+    
+    // Mixtral models
+    MIXTRAL_8x7B: 'mixtral-8x7b-32768',
 
-    // Mixtral models (Decommissioned, falling back to Llama)
-    MIXTRAL_8x7B: 'llama-3.1-8b-instant',
+    // Gemma models
+    GEMMA_2_9B: 'gemma2-9b-it',
 
-    // Gemma models (Decommissioned, falling back to Llama)
-    GEMMA_2_9B: 'llama-3.1-8b-instant',
-    GEMMA_2_27B: 'gemma-2-27b-it',
-
-    // New models (Decommissioned, falling back to Llama)
-    QWEN_2_5_32B: 'llama-3.1-8b-instant',
-    DEEPSEEK_R1: 'deepseek-r1-distill-qwen-32b',
+    // Specialized models
     WHISPER: 'whisper-large-v3-turbo'
 };
+
+
+export interface GroqOptions {
+    temperature?: number;
+    max_tokens?: number;
+    top_p?: number;
+    response_format?: { type: 'json_object' | 'text' };
+}
 
 export async function generateWithGroq(
     prompt: string,
     systemPrompt: string = 'You are a helpful AI assistant.',
-    model: string = MODELS.LLAMA_3_3_70B,  // Updated default
-    temperature: number = 0.7
+    model: string = MODELS.LLAMA_3_3_70B,
+    options: GroqOptions = {}
 ) {
+    const { 
+        temperature = 0.7, 
+        max_tokens = 4000, 
+        top_p = 0.95, 
+        response_format 
+    } = options;
+
     try {
         console.log(`Using Groq model: ${model}`);
 
@@ -48,18 +59,25 @@ export async function generateWithGroq(
             ],
             model: model,
             temperature: temperature,
-            max_tokens: 4000,
-            top_p: 0.95
+            max_tokens: max_tokens,
+            top_p: top_p,
+            ...(response_format && { response_format })
         });
 
         return completion.choices[0]?.message?.content || '';
     } catch (error: any) {
         console.error('Groq API error:', error);
 
-        // If model fails, try fallback
-        if (error.status === 400 && error.error?.code === 'model_decommissioned') {
-            console.log('Model decommissioned, trying fallback...');
-            return generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, temperature);
+        // If model fails or is decommissioned, try fallback
+        if (
+            (error.status === 400 && error.error?.code === 'model_decommissioned') ||
+            (error.status === 404) ||
+            (error.status === 429) // Rate limit fallback
+        ) {
+            if (model !== MODELS.MIXTRAL_8x7B) {
+                console.log(`Model ${model} failed, trying fallback to Mixtral...`);
+                return generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, options);
+            }
         }
 
         throw error;
@@ -105,9 +123,9 @@ export async function explainProblem(problem: string, difficulty: string) {
     const systemPrompt = 'You are a LeetCode expert tutor. Provide clear explanations with examples.';
 
     try {
-        return await generateWithGroq(prompt, systemPrompt, MODELS.GEMMA_2_9B, 0.5);
+        return await generateWithGroq(prompt, systemPrompt, MODELS.GEMMA_2_9B, { temperature: 0.5 });
     } catch (error) {
-        return await generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, 0.5);
+        return await generateWithGroq(prompt, systemPrompt, MODELS.MIXTRAL_8x7B, { temperature: 0.5 });
     }
 }
 
@@ -115,7 +133,7 @@ export async function generateHint(problem: string) {
     const prompt = `Give a subtle hint for this problem without revealing the full solution: ${problem}`;
     const systemPrompt = 'You are a helpful coding tutor. Provide hints that guide but don\'t give away the answer.';
 
-    return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_2_3B, 0.3); // Smaller model for hints
+    return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_1_8B, { temperature: 0.3 }); // Using 8B for hints
 }
 
 export async function debugCode(code: string, language: string, userId: string = 'anonymous') {
@@ -142,11 +160,80 @@ ${resumeText}`;
           Analyze resumes for Software Development Engineer (SDE) roles. Be specific, actionable, and honest.
           Always respond with valid JSON only — no markdown, no explanation outside the JSON.`;
 
-    return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B, 0.3);
+    return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B, { temperature: 0.3 });
 }
 
 export async function getAIResponse(prompt: string, userId: string = 'anonymous', systemPrompt: string = "You're a LeetCode expert.") {
     return generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B);
+}
+
+export async function generatePracticeQuestions(
+    topic: string,
+    difficulty: string = 'Medium',
+    count: number = 5,
+    subtopics: string[] = [],
+    mode: 'company' | 'topic' = 'topic',
+    format: 'coding' | 'mcq' | 'mixed' = 'mcq'
+) {
+    const diffInstruction = difficulty === 'Mixed'
+        ? 'Mix easy, medium, and hard difficulties evenly across questions.'
+        : `All questions should be ${difficulty} difficulty.`;
+
+    const subtopicContext = subtopics.length > 0 
+        ? `Focus explicitly on these subtopics (distribute questions evenly across them): ${subtopics.join(', ')}.`
+        : `Cover general aspects and common subtopics within ${topic}.`;
+
+    const formatInstruction = {
+        coding: `Generate exactly ${count} LeetCode-style coding problems. Each must have "type": "coding".`,
+        mcq: `Generate exactly ${count} multiple-choice questions. Each must have "type": "mcq".`,
+        mixed: `Generate exactly ${count} questions — roughly half LeetCode-style coding and half MCQ. Assign "type": "coding" or "type": "mcq" accordingly.`
+    }[format];
+
+    const context = mode === 'company' 
+        ? `You are simulating a technical interview at ${topic}. Questions should reflect ${topic}'s typical interview style, focus areas, and difficulty level.`
+        : `You are testing depth in the technical domain: ${topic}.`;
+
+    const prompt = `${context}
+    ${formatInstruction}
+    ${diffInstruction}
+    ${subtopicContext}
+
+    Return ONLY a valid JSON object with a "questions" key containing the array of questions. 
+    
+    For CODING questions ("type": "coding"):
+    - "title": string (LeetCode style)
+    - "difficulty": "Easy" | "Medium" | "Hard"
+    - "topic": string
+    - "description": string (Include constraints here or separately)
+    - "examples": array of { "input": string, "output": string, "explanation": string }
+    - "constraints": array of strings
+    - "solution_approach": string (3-4 sentences)
+    - "hint": string (one sentence)
+
+    For MCQ questions ("type": "mcq"):
+    - "question": string
+    - "options": array of 4 strings
+    - "answer": integer (0-3)
+    - "explanation": string
+    - "difficulty": "Easy" | "Medium" | "Hard"
+    - "subtopic": string
+
+    Be highly technical and accurate. Return ONLY valid JSON.`;
+
+    const systemPrompt = 'You are a professional technical interviewer for top-tier tech companies. Always respond with valid JSON.';
+
+    const response = await generateWithGroq(prompt, systemPrompt, MODELS.LLAMA_3_3_70B, {
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+    });
+
+    try {
+        const parsed = JSON.parse(response);
+        return parsed.questions || parsed || [];
+    } catch (e) {
+        console.error('Failed to parse AI response as JSON:', response);
+        throw new Error('AI failed to generate a valid question set.');
+    }
 }
 
 export async function generateSolutionApproach(problem: string, userId: string = 'anonymous') {
@@ -157,6 +244,31 @@ export async function generateSolutionApproach(problem: string, userId: string =
 
 export async function getHint(problem: string, userId: string = 'anonymous') {
     return generateHint(problem);
+}
+
+export async function streamWithGroq(
+    prompt: string,
+    systemPrompt: string = 'You are a helpful AI assistant.',
+    model: string = MODELS.LLAMA_3_3_70B,
+    options: GroqOptions = {}
+) {
+    const { 
+        temperature = 0.7, 
+        max_tokens = 4000, 
+        top_p = 0.95,
+    } = options;
+
+    return getGroqClient().chat.completions.create({
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+        ],
+        model: model,
+        temperature: temperature,
+        max_tokens: max_tokens,
+        top_p: top_p,
+        stream: true,
+    });
 }
 
 // Export models for use elsewhere

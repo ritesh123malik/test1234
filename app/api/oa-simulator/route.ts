@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { startOAAttempt, recordTabSwitch, submitOAAttempt } from '@/services/oa-service';
+import { startOAAttempt, recordTabSwitch, submitOAAttempt, getOAAttempt } from '@/services/oa-service';
 import { checkPremiumGate } from '@/lib/premium-gate';
 
 export async function GET(req: NextRequest) {
@@ -16,10 +16,10 @@ export async function GET(req: NextRequest) {
         // Fetch specific attempt and its questions
         // Simplified for prototype
         try {
-            const { data: attempt } = await supabase.from('oa_attempts').select('*, oa_templates(*)').eq('id', attemptId).single();
-            return NextResponse.json({ attempt });
-        } catch (e) {
-            return NextResponse.json({ error: 'Attempt not found' }, { status: 404 });
+            const result = await getOAAttempt(attemptId);
+            return NextResponse.json(result);
+        } catch (e: any) {
+            return NextResponse.json({ error: e.message || 'Attempt not found' }, { status: 404 });
         }
     }
 

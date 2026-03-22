@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { MagnifyingGlassIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -20,10 +21,31 @@ const DREAM_50 = [
 ];
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [activeSegment, setActiveSegment] = useState<'all' | 'dream50'>('dream50');
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-bg flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-200 border-t-primary-600" />
+        </div>}>
+            <CompaniesContent />
+        </Suspense>
+    );
+}
+
+function CompaniesContent() {
+    const searchParams = useSearchParams();
+    const filter = searchParams.get('filter');
+
+    const [companies, setCompanies] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [activeSegment, setActiveSegment] = useState<'all' | 'dream50'>(filter === 'dream' ? 'dream50' : 'all');
+
+    useEffect(() => {
+        if (filter === 'dream') {
+            setActiveSegment('dream50');
+        } else {
+            setActiveSegment('all');
+        }
+    }, [filter]);
 
   useEffect(() => {
     loadCompanies();
@@ -48,7 +70,7 @@ export default function CompaniesPage() {
 
     // Segment filtering
     if (activeSegment === 'dream50' && !isDream50) return false;
-    if (activeSegment === 'all' && isDream50) return false;
+    // 'all' segment now shows EVERYTHING, including dream50
 
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesIndustry = selectedIndustry === 'All' || company.industry === selectedIndustry;
@@ -75,22 +97,22 @@ export default function CompaniesPage() {
 
           <div className="flex gap-4 mb-8 p-1.5 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl w-fit">
             <button
+              onClick={() => setActiveSegment('all')}
+              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSegment === 'all'
+                ? 'bg-white text-black shadow-lg'
+                : 'text-[var(--text-muted)] hover:text-white'
+                }`}
+            >
+              ALL_COMPANIES
+            </button>
+            <button
               onClick={() => setActiveSegment('dream50')}
               className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSegment === 'dream50'
                   ? 'bg-[var(--brand-primary)] text-white shadow-lg'
                   : 'text-[var(--text-muted)] hover:text-white'
                 }`}
             >
-              Dream_50_Strike_Force
-            </button>
-            <button
-              onClick={() => setActiveSegment('all')}
-              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSegment === 'all'
-                  ? 'bg-white text-black shadow-lg'
-                  : 'text-[var(--text-muted)] hover:text-white'
-                }`}
-            >
-              General_Tactical_Index
+              COMPANIES_AT_LNMIIT
             </button>
           </div>
 

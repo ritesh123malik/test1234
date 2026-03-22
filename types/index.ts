@@ -7,6 +7,7 @@ export type Round = 'Online Test' | 'Technical 1' | 'Technical 2' | 'Managerial'
 
 export interface Profile {
   id: string;
+  username: string;
   email: string;
   full_name: string | null;
   avatar_url: string | null;
@@ -14,6 +15,17 @@ export interface Profile {
   graduation_year: number | null;
   target_role: string;
   created_at: string;
+  // Neural ID Fields
+  leetcode_handle?: string;
+  codeforces_handle?: string;
+  github_handle?: string;
+  neural_cache?: any;
+  neural_synced_at?: string;
+  neural_power_score?: number;
+  is_admin?: boolean;
+  professional_headline?: string;
+  bio?: string;
+  social_links?: any;
 }
 
 export interface Subscription {
@@ -103,10 +115,45 @@ export interface DashboardStats {
   roadmapsGenerated: number;
 }
 
+export interface NeuralStats {
+  leetcode?: {
+    totalSolved: number;
+    easy: number;
+    medium: number;
+    hard: number;
+    ranking: number;
+    calendar: Record<string, number>;
+  };
+  codeforces?: {
+    rating: number;
+    maxRating: number;
+    rank: string;
+    contests: number;
+  };
+  github?: {
+    publicRepos: number;
+    followers: number;
+    stars: number;
+    contributions: number;
+  };
+  timestamp: string;
+}
+
+export interface Contest {
+  id: string;
+  name: string;
+  platform: 'leetcode' | 'codeforces' | 'codechef' | 'atcoder';
+  startTime: string;
+  endTime: string;
+  duration: number;
+  url: string;
+}
+
 export interface InterviewExperience {
   id: string;
   user_id: string;
-  company_id: string;
+  company_id?: string;
+  company_name?: string;
   role: string;
   round: string;
   content: string;
@@ -114,7 +161,17 @@ export interface InterviewExperience {
   outcome: 'offered' | 'rejected' | 'pending' | 'withdrawn';
   year: number;
   is_verified: boolean;
+  is_anonymous: boolean;
+  upvotes: number;
+  downvotes: number;
   created_at: string;
   profiles?: Profile;
   companies?: Company;
+}
+
+export interface SimilarUser {
+  id: string;
+  name: string;
+  avatar_url?: string;
+  score: number;
 }

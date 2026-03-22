@@ -62,16 +62,17 @@ export default function EvaluationDashboard({
     const currentScore = Object.values(evaluation.score_breakdown).reduce((a, b) => a + b, 0) / SCORE_LABELS.length;
 
     return (
-        <div className='w-full lg:w-[400px] space-y-5 sticky top-6 self-start'>
+        <div className='w-full lg:w-[400px] space-y-5 lg:sticky lg:top-6 self-start'>
             {/* Latest Score Card */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className='bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-800 shadow-2xl relative overflow-hidden'
+                className='bg-gray-900/60 backdrop-blur-xl rounded-2xl p-4 md:p-6 border border-gray-800 shadow-2xl relative overflow-hidden'
             >
                 <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <BarChart3 size={120} />
+                    <BarChart3 size={80} md-size={120} />
                 </div>
+
 
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-blue-500/10 rounded-lg">

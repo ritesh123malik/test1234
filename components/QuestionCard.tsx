@@ -9,6 +9,7 @@ import { ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/lib/supabase';
 import { statsService } from '@/lib/stats-service';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 
 interface Props {
   question: Question;
@@ -35,9 +36,9 @@ export default function QuestionCard({ question, isBookmarked: initialBookmarked
     const result = await statsService.addToReview(userId, question.id);
     if (result.success) {
       setAddedToReview(true);
-      alert('Added to your review queue!');
+      toast.success('Strategy added to review queue');
     } else {
-      alert(result.message || result.error || 'Failed to add to queue');
+      toast.error(result.message || result.error || 'Failed to add to queue');
     }
     setLoading(false);
   }
@@ -66,7 +67,7 @@ export default function QuestionCard({ question, isBookmarked: initialBookmarked
     : question.difficulty === 'Hard' ? 'badge-hard' : 'badge-medium';
 
   return (
-    <div className="card p-5 hover:border-gray-300 transition-all duration-200">
+    <div className="glass-card p-5 hover:border-gray-300 transition-all duration-200">
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-3">

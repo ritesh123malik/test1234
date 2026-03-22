@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { startSession, evaluateResponse, transcribeAudio, endSession } from '@/services/interviewer-service';
+import { startSession, evaluateResponse, evaluateResponseStream, transcribeAudio, endSession } from '@/services/interviewer-service';
 import { createClient } from '@/lib/supabase/server';
 import { checkPremiumGate, incrementUsage } from '@/lib/premium-gate';
 
@@ -35,7 +35,21 @@ export async function POST(req: NextRequest) {
 
         // ── SUBMIT RESPONSE (text) ──────────────────────────
         if (action === 'respond') {
-            const { sessionId, questionText, answerText, interviewType, codeSnippet, codeLanguage, audioDurationSeconds } = body;
+            const { sessionId, questionText, answerText, interviewType, codeSnippet, codeLanguage, audioDurationSeconds, stream = false } = body;
+            
+            if (stream) {
+                const streamResponse = await evaluateResponseStream(
+                    sessionId, questionText, answerText, interviewType, codeSnippet, codeLanguage, audioDurationSeconds
+                );
+                return new Response(streamResponse, {
+                    headers: {
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                    },
+                });
+            }
+
             const evaluation = await evaluateResponse(sessionId, questionText, answerText, interviewType, codeSnippet, codeLanguage, audioDurationSeconds);
             return NextResponse.json({ evaluation });
         }

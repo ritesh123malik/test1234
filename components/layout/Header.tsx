@@ -11,13 +11,17 @@ import { Navigation } from './Navigation';
 import { StreakWidget } from '../widgets/StreakWidget';
 import { CGPAChip } from '../widgets/CGPAChip';
 import { NotificationBell } from '../widgets/NotificationBell';
+import { ThemeToggle } from '../widgets/ThemeToggle';
+import { NotificationCenter } from '../widgets/NotificationCenter';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export function Header() {
     useScrollHeader();
     const router = useRouter();
     const { headerScrolled, setMobileMenuOpen, setSearchOpen } = useUIStore();
     const [user, setUser] = useState<{ id: string; name: string; avatarUrl?: string; xp: number; streak: number; cgpa: number } | null>(null);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -98,7 +102,7 @@ export function Header() {
                         <span className="font-display font-bold text-lg tracking-tight text-text-primary">
                             placement<span className="text-brand-primary">intel</span>
                         </span>
-                        <span className="badge-lnmit">LNMIT</span>
+                        <span className="badge-lnmiit">LNMIIT</span>
                     </Link>
                 </div>
 
@@ -123,12 +127,12 @@ export function Header() {
                             name="search"
                             type="text"
                             placeholder="Search intel..."
-                            className="bg-transparent border-none outline-none text-sm w-32 focus:w-48 transition-all"
+                            className="bg-transparent border-none outline-none text-sm w-24 lg:w-32 focus:w-48 transition-all"
                         />
-                        <span className="text-[10px] bg-bg-muted px-1.5 py-0.5 rounded border border-border-strong ml-2">↵</span>
+                        <span className="hidden lg:inline-block text-[10px] bg-bg-muted px-1.5 py-0.5 rounded border border-border-strong ml-2">↵</span>
                     </form>
 
-                    <button onClick={() => setSearchOpen(true)} className="md:hidden text-text-secondary p-2">
+                    <button onClick={() => setSearchOpen(true)} className="md:hidden text-text-secondary p-2 touch-target">
                         <Search size={20} />
                     </button>
 
@@ -138,7 +142,9 @@ export function Header() {
                                 <StreakWidget streak={user.streak} />
                                 <CGPAChip cgpa={user.cgpa} />
                             </div>
-                            <NotificationBell count={3} />
+                            <ThemeToggle />
+                            <NotificationBell onClick={() => setIsNotifOpen(true)} />
+                            <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
 
                             {/* User Menu */}
                             <div className="relative group/user">
@@ -152,11 +158,11 @@ export function Header() {
                                 </button>
 
                                 {/* User Dropdown */}
-                                <div className="absolute top-full right-0 mt-2 w-56 opacity-0 translate-y-2 pointer-events-none group-hover/user:opacity-100 group-hover/user:translate-y-0 group-hover/user:pointer-events-auto transition-all duration-200">
+                                <div className="absolute top-full right-0 pt-2 w-56 opacity-0 translate-y-2 pointer-events-none group-hover/user:opacity-100 group-hover/user:translate-y-0 group-hover/user:pointer-events-auto transition-all duration-200">
                                     <div className="glass-card p-2 bg-bg-elevated/95 backdrop-blur-2xl">
                                         <div className="p-3 border-b border-border-subtle mb-1">
                                             <p className="font-bold text-sm text-text-primary capitalize">{user.name}</p>
-                                            <p className="text-[10px] text-text-muted">LNMIT Student • {user.xp} XP</p>
+                                            <p className="text-[10px] text-text-muted">LNMIIT Student • {user.xp} XP</p>
                                         </div>
                                         <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-bg-overlay text-sm text-text-secondary hover:text-text-primary transition-all">
                                             <User size={16} /> My Profile
@@ -170,9 +176,16 @@ export function Header() {
                                         <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-bg-overlay text-sm text-text-secondary hover:text-text-primary transition-all">
                                             <Settings size={16} /> Settings
                                         </Link>
-                                        <Link href="mailto:support@placementintel.com?subject=Feedback" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-bg-overlay text-sm text-text-secondary hover:text-text-primary transition-all">
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText('support@placementintel.com');
+                                                toast.success('Support email copied! Opening mailer...');
+                                                window.location.href = 'mailto:support@placementintel.com?subject=Feedback';
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-bg-overlay text-sm text-text-secondary hover:text-text-primary transition-all text-left"
+                                        >
                                             <MessageSquare size={16} /> Send Feedback
-                                        </Link>
+                                        </button>
                                         <div className="h-[1px] bg-border-subtle my-1" />
                                         <button
                                             onClick={handleSignOut}
@@ -186,17 +199,18 @@ export function Header() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <Link href="/auth/login" className="text-sm font-semibold text-text-secondary hover:text-text-primary">Sign In</Link>
-                            <Link href="/auth/signup" className="text-sm font-bold text-white bg-brand-primary px-4 py-2 rounded-xl shadow-lg shadow-brand-primary/20 hover:scale-105 transition-all">Get Started</Link>
+                            <Link href="/auth/login" className="hidden sm:block text-sm font-semibold text-text-secondary hover:text-text-primary">Sign In</Link>
+                            <Link href="/auth/signup" className="text-[11px] sm:text-sm font-bold text-white bg-brand-primary px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-brand-primary/20 hover:scale-105 transition-all">Get Started</Link>
                         </div>
                     )}
 
                     {/* Mobile Menu Toggle */}
-                    <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden text-text-secondary p-2">
-                        <Menu size={24} />
+                    <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden text-text-secondary p-1 ml-1 sm:ml-2">
+                        <Menu size={22} />
                     </button>
                 </div>
             </div>
         </header>
+
     );
 }

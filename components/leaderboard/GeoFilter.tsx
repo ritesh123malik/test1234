@@ -30,11 +30,11 @@ export default function GeoFilter({ type, value, onChange, options, placeholder 
     ).slice(0, 20);
 
     return (
-        <div ref={ref} className='relative'>
+        <div ref={ref} className='relative w-full md:w-fit'>
             <button
                 onClick={() => setOpen(!open)}
-                className={`flex items-center gap-3 px-5 py-3 rounded-2xl border text-sm font-bold
-          transition-all duration-300 group ${value
+                className={`flex items-center justify-between md:justify-start gap-3 px-5 py-3 rounded-2xl border text-sm font-bold
+          transition-all duration-300 group w-full ${value
                         ? 'bg-blue-600/10 border-blue-600/50 text-blue-400'
                         : 'bg-gray-900 border-gray-800 text-gray-500 hover:text-white hover:border-gray-700'
                     }`}
