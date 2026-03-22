@@ -147,6 +147,7 @@ export interface NeuralStats {
     rating: number;
     maxRating: number;
     rank: string;
+    maxRank: string;
     contests: number;
   };
   github?: {

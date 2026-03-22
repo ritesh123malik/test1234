@@ -91,17 +91,28 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    // 5. Update Solved Summary (Optional but recommended for consistency)
+    // 6. Reflect back to platform-specific profiles for UI widgets
     if (lc) {
-        await supabase.from('user_solved_questions_summary').upsert({
-            user_id: user.id,
-            platform: 'leetcode',
+        await supabase.from('leetcode_profiles').update({
             total_solved: lc.totalSolved,
             easy_solved: lc.easy,
             medium_solved: lc.medium,
             hard_solved: lc.hard,
-            last_synced_at: stats.timestamp
-        });
+            ranking: lc.ranking,
+            last_synced_at: stats.timestamp,
+            profile_data: lc
+        }).eq('user_id', user.id);
+    }
+
+    if (cf) {
+        await supabase.from('codeforces_profiles').update({
+            rating: cf.rating,
+            max_rating: cf.maxRating,
+            rank: cf.rank,
+            max_rank: cf.maxRank,
+            last_synced_at: stats.timestamp,
+            profile_data: cf
+        }).eq('user_id', user.id);
     }
 
     return NextResponse.json({ 

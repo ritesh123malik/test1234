@@ -89,6 +89,9 @@ export default function CodeforcesConnect() {
 
             if (dbError) throw dbError;
 
+            // Also update main profiles table for central sync
+            await supabase.from('profiles').update({ codeforces_handle: handle }).eq('id', user.id);
+
             setProfile(data);
             toast.success('Codeforces Protocol Established');
             setHandle('');
@@ -103,32 +106,13 @@ export default function CodeforcesConnect() {
         if (!profile) return;
         setSyncing(true);
         try {
-            const userInfo = await codeforcesAPI.fetchUserInfo(profile.codeforces_handle);
-            if (!userInfo) throw new Error('Sync Protocol Error');
-
-            const { data: { user } } = await supabase.auth.getUser();
-            const { error: updateError } = await supabase
-                .from('codeforces_profiles')
-                .update({
-                    rating: userInfo.rating,
-                    max_rating: userInfo.maxRating,
-                    rank: userInfo.rank,
-                    max_rank: userInfo.maxRank,
-                    last_synced_at: new Date().toISOString(),
-                    profile_data: userInfo
-                })
-                .eq('user_id', user?.id);
-
-            if (updateError) throw updateError;
-
-            setProfile({
-                ...profile,
-                rating: userInfo.rating,
-                max_rating: userInfo.maxRating,
-                rank: userInfo.rank,
-                max_rank: userInfo.maxRank,
-                last_synced_at: new Date().toISOString()
-            });
+            const res = await fetch('/api/neural/sync', { method: 'POST' });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Sync Failed');
+            }
+            
+            await fetchProfile(); // Reload local state from DB
             toast.success('Competitive Metrics Synchronized');
         } catch (err: any) {
             toast.error('Sync Interrupted: ' + err.message);

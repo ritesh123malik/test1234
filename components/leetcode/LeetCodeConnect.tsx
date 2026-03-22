@@ -111,6 +111,9 @@ export default function LeetCodeConnect() {
 
             if (dbError) throw dbError;
 
+            // Also update main profiles table for central sync
+            await supabase.from('profiles').update({ leetcode_handle: username }).eq('id', user.id);
+
             setProfile(data);
             toast.success('LeetCode Protocol Linked');
             setUsername('');
@@ -125,30 +128,14 @@ export default function LeetCodeConnect() {
         if (!profile) return;
         setSyncing(true);
         try {
-            const profileData = await leetcodeAPI.fetchUserProfile(profile.leetcode_username);
-            if (!profileData) throw new Error('Data Sync Error');
-
-            const { data: { user } } = await supabase.auth.getUser();
-            const { error: updateError } = await supabase
-                .from('leetcode_profiles')
-                .update({
-                    total_solved: profileData.totalSolved,
-                    easy_solved: profileData.easySolved,
-                    medium_solved: profileData.mediumSolved,
-                    hard_solved: profileData.hardSolved,
-                    acceptance_rate: profileData.acceptanceRate,
-                    ranking: profileData.ranking,
-                    streak: profileData.streak,
-                    last_synced_at: new Date().toISOString(),
-                    profile_data: profileData
-                })
-                .eq('user_id', user?.id);
-
-            if (updateError) throw updateError;
-
-            setStats(profileData);
-            setProfile({ ...profile, ...profileData, last_synced_at: new Date().toISOString() });
-            toast.success('Data Stream Synchronized');
+            const res = await fetch('/api/neural/sync', { method: 'POST' });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Sync Failed');
+            }
+            
+            await fetchProfile(); // Reload local state from DB
+            toast.success('Neural Link Synchronized');
         } catch (err: any) {
             toast.error('Sync Interrupted: ' + err.message);
         } finally {

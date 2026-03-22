@@ -20,6 +20,7 @@ export class CodeforcesAPI {
         rating: user.rating || 0,
         maxRating: user.maxRating || 0,
         rank: user.rank || 'unranked',
+        maxRank: user.maxRank || 'unranked',
         contests: contestCount
       };
     } catch (error) {
