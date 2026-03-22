@@ -113,6 +113,41 @@ class LeetCodeAPI {
     }
   }
 
+  async fetchRecentSubmissions(username: string) {
+    try {
+      const response = await fetch(this.proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            query recentAcSubmissions($username: String!, $limit: Int!) {
+              recentAcSubmissionList(username: $username, limit: $limit) {
+                id
+                title
+                titleSlug
+                timestamp
+              }
+            }
+          `,
+          variables: { username, limit: 20 }
+        })
+      });
+
+      const json = await response.json();
+      if (!json.data?.recentAcSubmissionList) return [];
+
+      return json.data.recentAcSubmissionList.map((sub: any) => ({
+        problem_id: sub.titleSlug,
+        problem_title: sub.title,
+        solved_at: new Date(parseInt(sub.timestamp) * 1000).toISOString(),
+        platform: 'leetcode'
+      }));
+    } catch (error) {
+      console.error('LC Recent Submissions Fetch Error:', error);
+      return [];
+    }
+  }
+
   async validateUsername(username: string): Promise<boolean> {
     try {
       const stats = await this.fetchStats(username);

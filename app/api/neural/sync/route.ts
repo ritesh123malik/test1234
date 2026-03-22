@@ -64,6 +64,33 @@ export async function POST(req: NextRequest) {
 
     if (updateError) throw updateError;
 
+    // 5. Phase 3.5: Populate History & Unified Submissions
+    const historyEntries = [];
+    if (lc) historyEntries.push({ user_id: user.id, platform: 'leetcode', rating: lc.ranking, ranking: lc.ranking });
+    if (cf) historyEntries.push({ user_id: user.id, platform: 'codeforces', rating: cf.rating, ranking: cf.rating });
+    if (gfg) historyEntries.push({ user_id: user.id, platform: 'gfg', rating: gfg.ranking, ranking: gfg.ranking });
+
+    if (historyEntries.length > 0) {
+        await supabase.from('user_rating_history').insert(historyEntries);
+    }
+
+    // Capture Submissions for Heatmap
+    const submissions = [];
+    if (lc && profile.leetcode_handle) {
+        const lcSubs = await leetcodeAPI.fetchRecentSubmissions(profile.leetcode_handle);
+        submissions.push(...lcSubs.map((s: any) => ({ ...s, user_id: user.id })));
+    }
+    if (cf && profile.codeforces_handle) {
+        const cfSubs = await codeforcesAPI.fetchRecentSubmissions(profile.codeforces_handle);
+        submissions.push(...cfSubs.map((s: any) => ({ ...s, user_id: user.id })));
+    }
+
+    if (submissions.length > 0) {
+        await supabase.from('unified_submissions').upsert(submissions, { 
+            onConflict: 'user_id,platform,problem_id,solved_at' 
+        });
+    }
+
     // 5. Update Solved Summary (Optional but recommended for consistency)
     if (lc) {
         await supabase.from('user_solved_questions_summary').upsert({

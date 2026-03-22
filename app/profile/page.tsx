@@ -61,17 +61,10 @@ export default function ProfilePage() {
   });
   const [speechSessions, setSpeechSessions] = useState<any[]>([]);
 
-  // Mock data for Phase 2 Visuals
-  const ratingData = [
-    { date: '2026-01-01', leetcode: 1650, codeforces: 1200 },
-    { date: '2026-01-15', leetcode: 1720, codeforces: 1250 },
-    { date: '2026-02-01', leetcode: 1805, codeforces: 1320 },
-    { date: '2026-02-15', leetcode: 1890, codeforces: 1380 },
-    { date: '2026-03-01', leetcode: 1950, codeforces: 1450 },
-    { date: '2026-03-15', leetcode: 2010, codeforces: 1520 },
-  ];
+  const [ratingData, setRatingData] = useState<any[]>([]);
+  const [skillData, setSkillData] = useState<any[]>([]);
 
-  const skillData = [
+  const defaultSkillData = [
     { subject: 'DS', A: 85, fullMark: 100 },
     { subject: 'Algo', A: 78, fullMark: 100 },
     { subject: 'System Design', A: 42, fullMark: 100 },
@@ -101,7 +94,24 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
     fetchSpeechSummary();
+    fetchAnalytics();
   }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      const [trajRes, skillRes] = await Promise.all([
+        fetch('/api/analytics?type=trajectory'),
+        fetch('/api/analytics?type=skills')
+      ]);
+      const { trajectory } = await trajRes.json();
+      const { skills } = await skillRes.json();
+      
+      if (trajectory?.length > 0) setRatingData(trajectory);
+      if (skills?.length > 0) setSkillData(skills);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+    }
+  };
 
   const fetchSpeechSummary = async () => {
     try {
@@ -637,12 +647,13 @@ export default function ProfilePage() {
                   <div className="w-3 h-3 bg-white/20 rounded-full" />
                 </div>
               </div>
-
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 {/* Radar visualization */}
                 <div className="relative aspect-square bg-[var(--bg-base)]/50 border border-[var(--border-subtle)] rounded-[3rem] flex items-center justify-center overflow-hidden">
                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--brand-primary)_0%,transparent_70%)]" />
-                  <SkillRadarChart data={skillData} />
+                  <div className="h-[400px] w-full p-4">
+                    <SkillRadarChart data={skillData.length > 0 ? skillData : defaultSkillData} />
+                  </div>
                 </div>
 
                 <div className="space-y-8">
@@ -680,42 +691,47 @@ export default function ProfilePage() {
               </div>
             </div>
 
-              <div className="grid md:grid-cols-2 gap-10">
-                <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
-                  <div className="absolute top-10 left-10 z-10">
-                    <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#FFA116]/10 border border-[#FFA116]/30 rounded-xl flex items-center justify-center">
-                        <LeetCodeIcon className="w-5 h-5 text-[#FFA116]" />
-                      </div>
-                      LeetCode Sync
-                    </h3>
-                  </div>
-                  <LeetCodeConnect />
+            <div className="grid md:grid-cols-2 gap-10">
+              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
+                <div className="absolute top-10 left-10 z-10">
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#FFA116]/10 border border-[#FFA116]/30 rounded-xl flex items-center justify-center">
+                      <LeetCodeIcon className="w-5 h-5 text-[#FFA116]" />
+                    </div>
+                    LeetCode Sync
+                  </h3>
                 </div>
-
-                <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
-                  <div className="absolute top-10 left-10 z-10">
-                    <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
-                        <TrophyIcon className="w-5 h-5 text-blue-400" />
-                      </div>
-                      Codeforces Sync
-                    </h3>
-                  </div>
-                  <CodeforcesConnect />
-                </div>
+                <LeetCodeConnect />
               </div>
 
-              {/* Rating Trajectory [NEW Phase 2] */}
-              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-base)]">
-                <h3 className="text-2xl font-display font-bold text-white mb-8 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 rounded-xl flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  Rating Trajectory
-                </h3>
-                <RatingTrajectoryChart data={ratingData} />
+              <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-2 shadow-2xl relative">
+                <div className="absolute top-10 left-10 z-10">
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-center">
+                      <TrophyIcon className="w-5 h-5 text-blue-400" />
+                    </div>
+                    Codeforces Sync
+                  </h3>
+                </div>
+                <CodeforcesConnect />
               </div>
+            </div>
+
+            {/* Rating Trajectory [NEW Phase 2] */}
+            <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-10 shadow-2xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-base)]">
+              <h3 className="text-2xl font-display font-bold text-white mb-8 flex items-center gap-4">
+                <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-indigo-400" />
+                </div>
+                Rating Trajectory
+              </h3>
+              <div className="h-[400px] w-full">
+                <RatingTrajectoryChart data={ratingData.length > 0 ? ratingData : [
+                  { date: '2026-01-01', leetcode: 1200, codeforces: 800 },
+                  { date: '2026-03-22', leetcode: 1200, codeforces: 800 }
+                ]} />
+              </div>
+            </div>
 
             {/* My Submissions [NEW] */}
             <div className="glass-card rounded-[2.5rem] border border-[var(--border-subtle)] p-12 shadow-2xl">
@@ -743,6 +759,7 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
 function LeetCodeIcon({ className }: { className?: string }) {
   return (

@@ -69,6 +69,29 @@ export class CodeforcesAPI {
       return {};
     }
   }
+
+  async fetchRecentSubmissions(handle: string) {
+    try {
+      const response = await fetch(`${this.baseUrl}/user.status?handle=${handle}&from=1&count=20`);
+      const data = await response.json();
+
+      if (data.status !== 'OK') return [];
+
+      return data.result
+        .filter((sub: any) => sub.verdict === 'OK')
+        .map((sub: any) => ({
+          problem_id: `${sub.problem.contestId}-${sub.problem.index}`,
+          problem_title: sub.problem.name,
+          solved_at: new Date(sub.creationTimeSeconds * 1000).toISOString(),
+          platform: 'codeforces',
+          difficulty: sub.problem.rating ? (sub.problem.rating < 1200 ? 'easy' : sub.problem.rating < 1600 ? 'medium' : 'hard') : 'medium',
+          tags: sub.problem.tags
+        }));
+    } catch (error) {
+      console.error('CF Recent Submissions Fetch Error:', error);
+      return [];
+    }
+  }
 }
 
 export const codeforcesAPI = new CodeforcesAPI();
