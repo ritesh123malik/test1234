@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,6 +31,15 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setInterval(() => setCooldown(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +51,17 @@ export default function ForgotPasswordPage() {
     });
 
     if (error) {
-      setError(error.message);
+      if (error.message.toLowerCase().includes('rate limit')) {
+        setError('Security Protocol: Too many recovery attempts. Please wait before retrying.');
+        setCooldown(60);
+      } else {
+        setError(error.message);
+      }
       toast.error('Protocol Error: ' + error.message);
     } else {
       setSubmitted(true);
       toast.success('Recovery Intel Deployed');
+      setCooldown(60);
     }
     setLoading(false);
   };
@@ -121,11 +136,13 @@ export default function ForgotPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || cooldown > 0}
                   className="w-full group bg-text-primary text-bg-base py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:bg-brand-primary hover:text-white transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin" size={18} />
+                  ) : cooldown > 0 ? (
+                    <>Retry in {cooldown}s</>
                   ) : (
                     <>
                       Send Recovery Link

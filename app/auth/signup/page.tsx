@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -34,7 +34,16 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setInterval(() => setCooldown(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +62,17 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setError(error.message);
+      if (error.message.toLowerCase().includes('rate limit')) {
+        setError('Security Protocol: Too many attempts. Please wait before retrying.');
+        setCooldown(60);
+      } else {
+        setError(error.message);
+      }
       toast.error('Access Denied: ' + error.message);
     } else {
       setMessage('Verification link deployed to your inbox.');
       toast.success('Clearance Requested: Check your email');
+      setCooldown(60); // Standard cooldown after success
       setTimeout(() => router.push('/auth/login'), 4000);
     }
     setLoading(false);
@@ -175,11 +190,13 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || cooldown > 0}
               className="w-full group bg-text-primary text-bg-base py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:bg-brand-tertiary hover:text-white transition-all disabled:opacity-50 shadow-xl shadow-bg-surface/20"
             >
               {loading ? (
                 <Loader2 className="animate-spin" size={18} />
+              ) : cooldown > 0 ? (
+                <>Retry in {cooldown}s</>
               ) : (
                 <>
                   Establish Connection
