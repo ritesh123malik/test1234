@@ -54,6 +54,8 @@ export default function ForgotPasswordPage() {
       if (error.message.toLowerCase().includes('rate limit')) {
         setError('Security Protocol: Too many recovery attempts. Please wait before retrying.');
         setCooldown(60);
+      } else if (error.message.toLowerCase().includes('email') || error.message.toLowerCase().includes('smtp')) {
+        setError('Delivery Failure: Unable to send recovery email. Please ensure SMTP is configured in your Supabase project.');
       } else {
         setError(error.message);
       }

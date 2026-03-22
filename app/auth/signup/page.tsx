@@ -65,6 +65,8 @@ export default function SignupPage() {
       if (error.message.toLowerCase().includes('rate limit')) {
         setError('Security Protocol: Too many attempts. Please wait before retrying.');
         setCooldown(60);
+      } else if (error.message.toLowerCase().includes('email') || error.message.toLowerCase().includes('smtp')) {
+        setError('Connection Error: The mail server is currently unresponsive. Please check your Supabase Auth SMTP settings.');
       } else {
         setError(error.message);
       }

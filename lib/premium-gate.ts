@@ -1,4 +1,5 @@
 import { createClient } from './supabase/server';
+import { getSupabaseAdmin } from './supabase/admin';
 
 export type GatedFeature = 'ai_interviews' | 'ats_scans' | 'p2p_sessions' | 'aptitude_mocks' | 'oa_simulator' | 'dsa_patterns' | 'audio_hints' | 'ai_roadmap';
 
@@ -23,8 +24,9 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
         // FAIL-SAFE: If profile is missing but user is authenticated, create it on-the-fly
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.id === userId) {
-            console.log(`Auto-creating missing profile for user ${userId}`);
-            const { data: newProfile, error: createError } = await supabase
+            console.log(`Auto-creating missing profile for user ${userId} using ADMIN client`);
+            const admin = getSupabaseAdmin();
+            const { data: newProfile, error: createError } = await admin
                 .from('profiles')
                 .insert({
                     id: userId,
@@ -37,12 +39,12 @@ export async function checkPremiumGate(userId: string, feature: GatedFeature) {
                 .single();
 
             if (createError) {
-                console.error('Failed to auto-create profile:', createError);
-                return { allowed: false, reason: 'Profile not found and could not be created.' };
+                console.error('Failed to auto-create profile with admin:', createError);
+                return { allowed: false, reason: 'Profile not found and could not be created even with admin access.' };
             }
             
-            // Also create initial free subscription
-            await supabase.from('subscriptions').insert({ user_id: userId, plan: 'free', status: 'active' });
+            // Also create initial free subscription using admin
+            await admin.from('subscriptions').insert({ user_id: userId, plan: 'free', status: 'active' });
             
             return { allowed: true, isPremium: false, remaining: FREE_LIMITS[feature] || 5 };
         }
