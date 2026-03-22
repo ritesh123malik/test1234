@@ -35,6 +35,7 @@ const MENU_ITEMS = [
                     { title: 'Strategic Practice Vault', desc: 'Arrays, Trees, DP, Graphs, OS, DBMS', href: '/practice', icon: <Brain size={16} />, badge: 'LIVE' },
                     { title: 'AI Mock Interview', desc: 'Real-time 1-on-1 AI interviewer', href: '/interviewer', icon: <Terminal size={16} />, badge: 'NEW' },
                     { title: 'Daily Challenge', desc: 'Solve one DSA problem daily & earn XP', href: '/daily-challenge', icon: <Target size={16} />, badge: 'HOT' },
+                    { title: 'Question Sheets', desc: 'SDE Sheets (Striver, Blind75, etc)', href: '/sheets', icon: <Library size={16} />, badge: 'NEW' },
                     { title: 'Resume Tips', desc: 'ATS optimization, project framing tips', href: '/resume', icon: <FileText size={16} /> }
                 ]
             }
@@ -60,7 +61,6 @@ const MENU_ITEMS = [
             {
                 items: [
                     { title: 'My Dashboard', desc: 'Your full progress overview', href: '/dashboard', icon: <Layout size={16} /> },
-                    { title: 'Question Sheets', desc: 'SDE Sheets (Striver, Blind75, etc)', href: '/sheets', icon: <Library size={16} />, badge: 'NEW' },
                     { title: 'Contest Calendar', desc: 'Global coding contest schedule', href: '/dashboard#contests', icon: <Trophy size={16} />, badge: 'LIVE' },
                 ]
             }

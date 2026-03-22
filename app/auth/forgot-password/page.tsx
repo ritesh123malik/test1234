@@ -178,7 +178,7 @@ export default function ForgotPasswordPage() {
         {/* Footer */}
         <motion.p variants={itemVariants} className="text-center mt-10 text-sm font-medium text-text-muted">
           Need assistance?{' '}
-          <Link href="mailto:support@placementintel.com" className="text-text-primary font-bold hover:text-brand-primary transition-colors underline underline-offset-4 decoration-border-strong">
+          <Link href="mailto:intelplacement0@gmail.com" className="text-text-primary font-bold hover:text-brand-primary transition-colors underline underline-offset-4 decoration-border-strong">
             Contact High Command
           </Link>
         </motion.p>

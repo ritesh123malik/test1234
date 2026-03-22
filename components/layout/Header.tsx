@@ -142,7 +142,6 @@ export function Header() {
                                 <StreakWidget streak={user.streak} />
                                 <CGPAChip cgpa={user.cgpa} />
                             </div>
-                            <ThemeToggle />
                             <NotificationBell onClick={() => setIsNotifOpen(true)} />
                             <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
 
@@ -178,9 +177,9 @@ export function Header() {
                                         </Link>
                                         <button
                                             onClick={() => {
-                                                navigator.clipboard.writeText('support@placementintel.com');
+                                                navigator.clipboard.writeText('intelplacement0@gmail.com');
                                                 toast.success('Support email copied! Opening mailer...');
-                                                window.location.href = 'mailto:support@placementintel.com?subject=Feedback';
+                                                window.location.href = 'mailto:intelplacement0@gmail.com?subject=Feedback';
                                             }}
                                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-bg-overlay text-sm text-text-secondary hover:text-text-primary transition-all text-left"
                                         >
