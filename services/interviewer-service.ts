@@ -272,13 +272,13 @@ export async function endSession(sessionId: string) {
         .eq('id', sessionId);
 
     // Update user profile XP
-    const { data: sessionData } = await supabase.from('interviewer_sessions').select('user_id').eq('id', sessionId).single();
+    const { data: sessionData } = await supabase.from('interviewer_sessions').select('user_id').eq('id', sessionId).maybeSingle();
     if (sessionData?.user_id) {
         const { error: xpError } = await supabase.rpc('increment_xp', { p_user_id: sessionData.user_id, p_amount: xpReward });
         if (xpError) {
             console.error('Error rewarding XP:', xpError);
             // Fallback: try direct update if RPC fails
-            const { data: profile } = await supabase.from('profiles').select('xp').eq('id', sessionData.user_id).single();
+            const { data: profile } = await supabase.from('profiles').select('xp').eq('id', sessionData.user_id).maybeSingle();
             await supabase.from('profiles').update({ xp: (profile?.xp || 0) + xpReward }).eq('id', sessionData.user_id);
         }
     }

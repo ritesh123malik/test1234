@@ -210,7 +210,7 @@ end $$;
 -- ============================================================
 
 -- Auto-create profile on signup
-create or replace function handle_new_user()
+create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, email, full_name, username, avatar_url)
@@ -231,11 +231,22 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Trigger creation (Drop first to avoid duplication)
+-- Trigger creation
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute function handle_new_user();
+  for each row execute function public.handle_new_user();
+
+-- Manual insert for existing users without profiles
+insert into public.profiles (id, email, full_name, username)
+select 
+  id, 
+  email, 
+  raw_user_meta_data->>'full_name',
+  coalesce(raw_user_meta_data->>'username', split_part(email, '@', 1))
+from auth.users
+where id not in (select id from public.profiles)
+on conflict (id) do nothing;
 
 -- Atomic XP Increment
 create or replace function increment_xp(p_user_id uuid, p_amount int)

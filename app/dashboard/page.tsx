@@ -26,8 +26,8 @@ export default async function DashboardPage() {
 
   // Fetch all user data in parallel
   const [profileRes, subRes, progressRes, bookmarksRes, resumeRes, roadmapsRes, sheetsRes, revisionRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('subscriptions').select('*').eq('user_id', user.id).single(),
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('user_progress').select('*, company:companies(name, slug)').eq('user_id', user.id).order('last_studied_at', { ascending: false }).limit(5),
     supabase.from('bookmarks').select('id', { count: 'exact' }).eq('user_id', user.id),
     supabase.from('resumes').select('score, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
