@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No questions found for this configuration' }, { status: 404 });
         }
 
-        const questionIds = questions.map(q => q.id);
+        const questionIds = questions.map((q: any) => q.id);
 
         // 2. Create a temporary template or use a generic one
         // For simplicity, we find or create a generic DSA template
