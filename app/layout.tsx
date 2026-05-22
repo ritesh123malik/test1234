@@ -39,6 +39,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from '@/components/theme-provider';
+import { Analytics } from '@vercel/analytics/next';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Layout>
           <AIFloatingButton />
           <Toaster position="top-right" theme="dark" closeButton richColors />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
